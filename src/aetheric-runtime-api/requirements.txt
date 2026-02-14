@@ -1,0 +1,4 @@
+aio_pika>=9.5
+fastapi>=0.121
+httpx>=0.28
+
