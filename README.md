@@ -1,69 +1,182 @@
-# Parallel You
+# Aetheric Runtime
 
-**Parallel You** is a saga-driven personal operations system. It treats your long-running goals, recurring responsibilities, and creative processes the same way a distributed system handles complex, multi-step workflows.
+**Aetheric Runtime** is an event-driven runtime library for building
+thread-based domain systems with explicit messaging and repository
+abstractions.
 
-You get:
+It provides:
 
-* **Threads** for ongoing life domains
-* **Sagas** for long-running arcs inside those domains
-* **Stories** for bite-sized steps
-* **Events** that record every state change
+-   A clean C# domain model (`Domain`, `Saga`, `Story`)
+-   A message bus abstraction (`IBroker`, `ITransport`)
+-   Pluggable transports (InMemory, RabbitMQ)
+-   Pluggable repositories (InMemory, MongoDB)
+-   Contract-driven tests for routing and persistence semantics
+-   A lightweight FastAPI gateway for HTTP/WebSocket integration
 
-Parallel You gives you a structured way to think, plan, and act -- without forcing artificial methodolgies on top. It's your internal "process engine", made explicit.
+This repository contains runtime building blocks. It does **not**
+include a full application host.
 
-Built on a clean event model and real async orchestration (C#), Parallel You uses RabbitMQ for distributed messaging, and an in-memory broker for local use. It's fast, low-ceremony, and brutally honest on what's happening in your life and why.
+------------------------------------------------------------------------
 
-## Philosphy
+## Design Goals
 
-I wrote Parallel You to help myself think. As life and code both scale in complexity, the mental load starts to feel like juggling plates on a moving train. Parallel You brings structure to that chaos -- _without_ dictating how you're supposed to work.
+v1.0.0 focuses on architectural clarity and development simplicity.
 
-At a certain point, raw creativity becomes its own management problem. The more projects you accumulate (and there is always more than one), the harder it becomes to track energy, intent, timing, and momentum. This isn't a glorified todo list. It's a way to track your **actual cognitive bandwidth** -- estimated session length, real energy expenditure, priority, timing, and the events that shape a work arc.
+The runtime is built around a few core principles:
 
-Parallel You stays subtle. It remembers what you're working on, how long you've been at it, how much focus you've burned, and nudges you when you've reached a healthy limit. Not commands -- just signals. A quiet metronome for your inner process.
+-   **Message-shaped reality** -- All cross-boundary interactions occur
+    via messages.
+-   **Intentional minimalism** -- Abstractions are thin and explicit.
+-   **Replaceable infrastructure** -- Transports and repositories can be
+    swapped without disturbing the domain.
+-   **Deterministic tests** -- InMemory implementations enable
+    predictable contract verification.
 
-The secondary purpose of this project is architectural: to demonstrate what it looks like to design a scalable system from zero, evolve the architecture naturally, and eventually distribute it across real messaging infrastructure. Parallel You serves as both a personal tool and a modern example of clear, event-driven design.
+This project is suitable as a foundation for event-driven applications
+that need clear domain modeling without premature microservice
+complexity.
+
+------------------------------------------------------------------------
+
+## Repository Structure
+
+### C# Runtime Library
+
+The C# solution defines:
+
+-   `AethericForge.Runtime.Model`
+    -   Domain types and base message classes.
+-   `AethericForge.Runtime.Bus.Abstractions`
+    -   `IBroker`, `ITransport`, and handler contracts.
+-   `AethericForge.Runtime.Bus`
+    -   `MessageBroker`
+    -   `InMemoryTransport`
+    -   `RabbitMqTransport`
+-   `AethericForge.Runtime.Repo.Abstractions`
+    -   `IRepo` and `FilterSpec`
+-   `AethericForge.Runtime.Repo`
+    -   `InMemoryRepo`
+    -   `MongoRepo`
+-   `AethericForge.Runtime.Tests`
+    -   Contract tests for bus and repository behavior.
+
+### Python Gateway (`aetheric-runtime-api`)
+
+A FastAPI service that:
+
+-   Publishes command envelopes to RabbitMQ
+-   Dynamically exposes HTTP endpoints based on RabbitMQ bindings
+-   Streams session-scoped events over WebSocket
+
+The API is intentionally thin. It does not implement business logic.
+
+------------------------------------------------------------------------
 
 ## Core Concepts
 
-Parallel You treats your work the way a multi-processor treats computation: as **threads**. Each thread is a unique stream of taks, events, and intentions. The terminology is deliberate -- it pushes you toward a more orderly mental model, the same way a CPU scheduler creates order out of competing workloads. Your time blocks (called **quantums**) aren't rigid cycles, though. They're creative sessions -- focused bursts of attention you allocate intentionally.
+### Threads
 
-Like any processor, your mind can run _hot_. Parallel You tracks your cognitive load using three broad **energy bands**. A deep band means you spent the quantum in full concentration; moderate is sustained, but comfortable focus; light is shallow-effort or administrative work. Seeing upcoming tasks through the lens of energy cost helps you plan more realistically and work more efficiently.
+The primary domain entity is `Thread`, with three concrete types:
 
-Theads aren't isolated. They fork, merge, block, and wait on each other -- just like real concurrent systems. Parallel You tracks these relationships using explicit **states** and **blockers**. A new thread begins in the _Ready_ state. When you enter a quantum, it transitions to _Running_. When you wrap up, you _yield_ -- recording context, saving momentum, and preparing the way for your next thread.
+-   `Domain`
+-   `Saga`
+-   `Story`
 
-## How it Works
+Each thread includes:
 
-Parallel You is designed to be simple and unobtrusive. A thought comes to mind -- a project idea, a task, a responsibility -- and you capture it as a **thread**. You give it a rough shape: how much energy it will likely cost, and how long you expect to work on it when its turn comes. Over time, these individual threads naturally gather into **sagas** (long-running arcs), and then into broader **domains**.
+-   `Id` (slug-derived if omitted)
+-   `Title`
+-   `Priority`
+-   `Quantum`
+-   `Archived` and timestamp metadata
 
-Take the Aetheric Forge as an example. It has multiple domains -- the IaC/Architecture work, the Aetheric Press satire engine, and the Baator world-building efforts. Each domain contains its own sagas, and each saga contains stories. Parallel You itself is a saga within the Aetheric Forge domain, while its version releases are individual stories. The structure emerges organically as you work.
+Repositories return deep copies to preserve snapshot semantics.
 
-Threads inevitably intertwine. Work on Parallel You shapes the tools and patterns used by Aetheric Forge or Baator; some domains can't move forward until a certain architectural milestone is reached. Once that architecture exists, it accelerates every other project -- feeding improvements back into Parallel You on the next cycle. Creativity and refinement reinforce each other instead of competing for headspace.
+------------------------------------------------------------------------
 
-Using this system has helped turn my high-level intentions into concrete taks that fit within realistic time and energy boundaries. Instead of restricting creativity, it channels it -- and it gives me visibility into my cognitive load so I can rest when needed and maintain momentum without burning out.
+### Messages
 
-## Architectural Overview
+Messages derive from `Message` or `Message<TPayload>`.
 
-Parallel You is an event-driven application built with clean separation of concerns, CQRS-style messaging, a lightweight microservice mindset, and a domain-driven core. The result is an architecture with four major components:
+If a routing key is not explicitly set, it is derived from the class
+name:
 
-1. **Repository** -- a place to store and update threads. The system supports multiple repository types; an in-memory version (ideal for testing and development) and a MongoDB implementation are included. New repositories can be added without disturbing the domain.
-2. **Message Broker** -- the central nervous system of the application. All events flow through the broker, which delivers them to the subscribers that care about each topic.
-3. **Message Transport** -- the "wire" the messages travel over. Transports define how events actually move to and from the broker. The system currently supports an in-memory transport and RabbitMQ with room for more.
-4. **Domain Model** -- the conceptual map of the system, organized into domains, evetns, and bounded contexts. This forms the foundation for future microservice decomposition.
+    DomainCreated → domain.created
+    StoryUpdated → story.updated
 
-### Repository
+Routing uses dot-delimited topic semantics with `*` and `#` wildcards.
 
-The repository is intentionally minimal: broad primitives like `upsert` and `list` instead of a jungle of specialized methods. The caller is responsible for shaping the returned data into higher-level domain objects. This keeps the repository layer clean, predictable, and easy to replace.
+------------------------------------------------------------------------
 
-### Message Broker
+### Bus Abstraction
 
-The broker coordinates communication between components -- for example between the TUI and the underlying storage. It also slects and manages the message transport. Nothing in the applications talks to the transport directly; every event must pass through the broker, keeping the architecture consistent.
+-   `IBroker` routes messages by routing key.
+-   `ITransport` handles delivery mechanics.
 
-### Message Transport
+`MessageBroker` wraps a transport and provides:
 
-Transports handle the raw delivery of messages: acknowledgements, retries, fan-out, and the mechanics of moving events across boundaries. In-memory transport is perfect for simple scenarios; RabbitMQ gives true distributed messaging for multi-interface or multi-service setups.
+-   `Publish(Message)`
+-   `Emit(routingKey, payload, meta)`
+-   `Route(routingKey, handler)`
 
-### Domain Model
+Transports included:
 
-The domain model captures the shape of the real-world problem the application solves. Classes and their attributes form a conceptual map, grouped into domains and subdivided into bounded contexts. The boundaries are the natural seams for future microservices -- each with its own event types and responsibilities.
+-   `InMemoryTransport` -- deterministic, ideal for tests.
+-   `RabbitMqTransport` -- topic exchange integration.
 
-Further technical detail on each component is available in the [ARCHITECTURE](ARCHITECTURE.md) document.
+------------------------------------------------------------------------
+
+### Repository Abstraction
+
+`IRepo` defines:
+
+-   `List`
+-   `Get`
+-   `Upsert`
+-   `Delete`
+-   `Clear`
+
+Backends:
+
+-   `InMemoryRepo`
+-   `MongoRepo`
+
+Filtering supports title search, archived state, and thread type.
+
+------------------------------------------------------------------------
+
+## Environment Configuration
+
+Optional integrations are enabled via environment variables:
+
+    RABBITMQ_URL
+    MONGO_URI
+
+The Python API also requires access to the RabbitMQ management API for
+command discovery.
+
+------------------------------------------------------------------------
+
+## Known Gaps
+
+This repository intentionally does not include:
+
+-   An application host consuming commands and emitting events
+-   Exchange/queue provisioning beyond tests
+-   Authentication/authorization for the API
+
+It provides runtime primitives, not a finished system.
+
+------------------------------------------------------------------------
+
+## Status
+
+v1.0.0 establishes:
+
+-   Clear architectural boundaries
+-   Transport abstraction via `IBroker`
+-   Repository contract semantics
+-   Deterministic test infrastructure
+
+Future versions may expand host examples, provisioning patterns, and
+production hardening.
