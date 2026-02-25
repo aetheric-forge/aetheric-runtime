@@ -1,8 +1,9 @@
 using System.Collections.Concurrent;
+using System.Text;
+using System.Text.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using AethericForge.Runtime.Bus.Abstractions;
-using AethericForge.Runtime.Model.Messages;
 
 namespace AethericForge.Runtime.Bus.Transports;
 
@@ -11,14 +12,32 @@ namespace AethericForge.Runtime.Bus.Transports;
 /// Uses a topic exchange; each subscription creates a transient, exclusive queue
 /// bound with the provided binding key (supports * and # like RabbitMQ topics).
 /// </summary>
-public sealed class RabbitMqTransport(string url, string exchangeName = "parallel_you_tests") : ITransport
+public sealed class RabbitMqTransport(string url, string exchangeName) : ITransport
 {
     private IConnection? _conn;
     private IChannel? _channel;
     private volatile bool _started;
-    private readonly ConcurrentQueue<(string pattern, MessageHandler handler)> _pending = new();
+    private readonly ConcurrentQueue<(string pattern, EnvelopeHandler handler)> _pending = new();
 
-    public async Task Start()
+    private string ResolveExchange(Envelope e) =>
+        e.Kind switch
+        {
+            "request" => $"{e.Service}.commands",
+            "event"  => $"{e.Service}.events",
+            "response"  => $"{e.Service}.replies",
+            _ => throw new InvalidOperationException("Unknown envelope kind: {e.Kind}")
+        };
+
+    private string ResolveRoutingKey(Envelope e) =>
+        e.Kind switch
+        {
+            "request" => $"{e.Service}.{e.Verb}",
+            "response" or "error" => $"reply.{e.Meta?["client_id"]}",
+            "event" => e.Topic!,
+            _ => throw new InvalidOperationException("Unknown envelope kind.")
+        }; 
+        
+    public async Task StartAsync(CancellationToken ct = default)
     {
         var factory = new ConnectionFactory
         {
@@ -26,10 +45,10 @@ public sealed class RabbitMqTransport(string url, string exchangeName = "paralle
             ConsumerDispatchConcurrency = 4
         };
 
-        _conn = await factory.CreateConnectionAsync();
-        _channel = await _conn.CreateChannelAsync();
+        _conn = await factory.CreateConnectionAsync(ct);
+        _channel = await _conn.CreateChannelAsync(cancellationToken: ct);
         // Non-durable, auto-delete exchange suitable for tests
-        await _channel.ExchangeDeclareAsync(exchangeName, ExchangeType.Topic, durable: false, autoDelete: true);
+        await _channel.ExchangeDeclareAsync(exchangeName, ExchangeType.Topic, durable: false, autoDelete: true, cancellationToken: ct);
         _started = true;
 
         // drain any pending subscriptions that were registered before Start()
@@ -39,7 +58,7 @@ public sealed class RabbitMqTransport(string url, string exchangeName = "paralle
         }
     }
 
-    public async Task Stop()
+    public async Task StopAsync(CancellationToken ct = default)
     {
         _started = false;
         
@@ -54,28 +73,34 @@ public sealed class RabbitMqTransport(string url, string exchangeName = "paralle
 
         if (channel is not null)
         {
-            try { await channel.CloseAsync(); } catch { /* ignore */ }
+            try { await channel.CloseAsync(ct); } catch { /* ignore */ }
             channel.Dispose();
         }
 
         if (conn is not null)
         {
-            try { await conn.CloseAsync(); } catch { /* ignore */ }
+            try { await conn.CloseAsync(ct); } catch { /* ignore */ }
             conn.Dispose();
         }
     }
 
-    public async Task Publish(Message msg)
+    public async Task PublishAsync(Envelope envelope,  CancellationToken ct = default)
     {
         if (!_started || _channel is null)
             throw new InvalidOperationException("Transport not started");
 
-        var body = ReadOnlyMemory<byte>.Empty; // we don't rely on body content in current tests
-        var props = new BasicProperties { Persistent = true };
-        await _channel.BasicPublishAsync(exchange: exchangeName, routingKey: msg.Type, mandatory: false, basicProperties: props, body: body);
+        var json = JsonSerializer.Serialize(envelope);
+        var body = Encoding.UTF8.GetBytes(json);
+        
+       await _channel.BasicPublishAsync(
+            exchange: ResolveExchange(envelope),
+            routingKey: ResolveRoutingKey(envelope),
+            body: body,
+            cancellationToken: ct
+        );
     }
 
-    public async Task Subscribe(string pattern, MessageHandler handler)
+    public async Task SubscribeAsync(string pattern, EnvelopeHandler handler, CancellationToken  ct = default)
     {
         if (!_started || _channel is null)
         {
@@ -83,52 +108,69 @@ public sealed class RabbitMqTransport(string url, string exchangeName = "paralle
             return; // will be bound on Start()
         }
 
-        await InternalSubscribe(pattern, handler);
+        await InternalSubscribe(pattern, handler, ct);
     }
 
-    private async Task InternalSubscribe(string pattern, MessageHandler handler)
+    
+    private static readonly JsonSerializerOptions EnvelopeJson = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+    
+    private async Task InternalSubscribe(string pattern, EnvelopeHandler handler, CancellationToken ct = default)
     {
         if (_channel is null) return;
 
         // Create an exclusive, auto-delete queue per handler
-        var queue = await _channel.QueueDeclareAsync(queue: string.Empty, durable: false, exclusive: true, autoDelete: true);
-        await _channel.QueueBindAsync(queue.QueueName, exchangeName, routingKey: pattern);
+        var queue = await _channel.QueueDeclareAsync(
+            queue: string.Empty,
+            durable: false,
+            exclusive: true,
+            autoDelete: true,
+            cancellationToken: ct);
+        
+        ct.ThrowIfCancellationRequested();
+
+        await _channel.QueueBindAsync(
+            queue: queue.QueueName,
+            exchange: exchangeName,
+            routingKey: pattern,
+            cancellationToken: ct);
+        
+        ct.ThrowIfCancellationRequested();
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
+
         consumer.ReceivedAsync += async (_, ea) =>
         {
             try
             {
-                var routingKey = ea.RoutingKey;
-                var msg = new SimpleMessage(new Dictionary<string, object>(), routingKey, null);
-                await handler(msg);
+                // 1) Decode JSON
+                var json = Encoding.UTF8.GetString(ea.Body.Span);
+
+                // 2) Deserialize Envelope
+                var envelope = JsonSerializer.Deserialize<Envelope>(json, EnvelopeJson)
+                               ?? throw new InvalidOperationException("Failed to deserialize Envelope.");
+
+                // 3) Optional: validate structural invariants
+                EnvelopeValidator.Validate(envelope);
+
+                // 4) Hand off to handler
+                await handler(envelope);
+
+                // 5) Ack only after successful handler completion
                 await _channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
             }
             catch
             {
-                // Reject and do not requeue to avoid infinite redelivery loops in tests
-                await _channel!.BasicRejectAsync(ea.DeliveryTag, requeue: false);
+                // In tests: reject without requeue to avoid infinite loops
+                await _channel.BasicRejectAsync(ea.DeliveryTag, requeue: false);
             }
         };
 
-        await _channel.BasicConsumeAsync(queue: queue.QueueName, autoAck: false, consumer: consumer);
-    }
-
-    /*
-     * This class represents the JSON payload, with an optional `meta` dictionary
-     */
-    private sealed class SimpleMessage(
-        IReadOnlyDictionary<string, object> payload,
-        string? type,
-        IReadOnlyDictionary<string, object>? meta)
-        
-        // ReSharper disable once ArrangeObjectCreationWhenTypeNotEvident
-        // ReSharper disable once HeapView.ObjectAllocation.Evident
-        // If no payload is provided, a `Message` object with an empty dictionary will be constructed
-        // The type is a string that is understood by the services and clients to key to a particular event class
-        : Message<Dictionary<string, object>>(new(payload), type)
-    {
-        // ReSharper disable once UnusedMember.Local
-        public IReadOnlyDictionary<string, object>? Meta => meta;
+        await _channel.BasicConsumeAsync(
+            queue: queue.QueueName,
+            autoAck: false,
+            consumer: consumer);
     }
 }

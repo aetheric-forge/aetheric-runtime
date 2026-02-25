@@ -1,8 +1,8 @@
 using AethericForge.Runtime.Bus;
 using AethericForge.Runtime.Bus.Abstractions;
 using AethericForge.Runtime.Bus.Transports;
+using AethericForge.Runtime.Repo;
 using AethericForge.Runtime.Repo.Abstractions;
-using AethericForge.Runtime.Repo.Backends;
 
 namespace AethericForge.Runtime.Tests;
 
@@ -30,7 +30,7 @@ public static class TestMatrix
             {
                 (Func<(ITransport transport, IBroker broker)>)(() =>
                 {
-                    var t = new RabbitMqTransport(rabbitUrl);
+                    var t = new RabbitMqTransport(rabbitUrl, "aetheric-tests");
                     IBroker b = new MessageBroker(t);
                     return (t, b);
                 })
@@ -44,7 +44,7 @@ public static class TestMatrix
         // InMemory case
         yield return new object[]
         {
-            (Func<IRepo>)(() => new InMemoryRepo())
+            (Func<IRepo<TestModels.TestMessage>>)(() => new InMemoryRepo<TestModels.TestMessage>())
         };
 
         var mongoUri = Environment.GetEnvironmentVariable("MONGO_URI");
@@ -59,11 +59,11 @@ public static class TestMatrix
                 {
                     yield return new object[]
                     {
-                        (Func<IRepo>)(() =>
+                        () =>
                         {
                             // database/collection names defaulted as in app Program.cs
-                            return (IRepo)ctor.Invoke(new object[] { mongoUri, "parallel_you", "threads" });
-                        })
+                            return ctor.Invoke(new[] { mongoUri, "parallel_you", "threads" });
+                        }
                     };
                 }
             }

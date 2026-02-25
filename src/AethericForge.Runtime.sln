@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Model", "AethericRuntime\AethericForge.Runtime.Model\AethericForge.Runtime.Model.csproj", "{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Bus", "AethericRuntime\AethericForge.Runtime.Bus\AethericForge.Runtime.Bus.csproj", "{4AD52D28-DEDC-45EC-A112-AEDC60013DE2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Repo", "AethericRuntime\AethericForge.Runtime.Repo\AethericForge.Runtime.Repo.csproj", "{851D1154-09EB-4E26-A5A0-35A978FC07A2}"
@@ -30,9 +28,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Components", "Components", "{2B2C6726-E16E-4266-9336-310C6204CFF8}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Models", "Models", "{D1E0B065-0443-4E00-BD5A-862E4069A7A5}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{AD4CDE37-D154-4F43-8EF2-999176F24C08}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Hosting", "Hosting", "{EB168A90-BFF7-4849-A2D4-3F852B3F38DF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Models", "Models", "{B65A1113-F2DE-4F5F-9F76-2D28080D4830}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,18 +44,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Debug|x64.Build.0 = Debug|Any CPU
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Debug|x86.Build.0 = Debug|Any CPU
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Release|x64.ActiveCfg = Release|Any CPU
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Release|x64.Build.0 = Release|Any CPU
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Release|x86.ActiveCfg = Release|Any CPU
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D}.Release|x86.Build.0 = Release|Any CPU
 		{4AD52D28-DEDC-45EC-A112-AEDC60013DE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4AD52D28-DEDC-45EC-A112-AEDC60013DE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4AD52D28-DEDC-45EC-A112-AEDC60013DE2}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -133,7 +121,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{7F6D930B-14B6-4E8B-AAEC-7E795AC1AF6D} = {D1E0B065-0443-4E00-BD5A-862E4069A7A5}
 		{4AD52D28-DEDC-45EC-A112-AEDC60013DE2} = {2B2C6726-E16E-4266-9336-310C6204CFF8}
 		{851D1154-09EB-4E26-A5A0-35A978FC07A2} = {2B2C6726-E16E-4266-9336-310C6204CFF8}
 		{96A5BCAA-3D7F-45B4-B0E2-92ACEAD3DBCA} = {2B2C6726-E16E-4266-9336-310C6204CFF8}
