@@ -1,13 +1,12 @@
-using AethericForge.Runtime.Model.Messages;
-
 namespace AethericForge.Runtime.Bus.Abstractions;
 
-public delegate Task MessageHandler(Message msg);
+public delegate Task EnvelopeHandler(Envelope envelope, CancellationToken ct = default);
 
 public interface ITransport
 {
-    Task Publish(Message msg);
-    Task Subscribe(string pattern, MessageHandler handler);
-    Task Start();
-    Task Stop();
+    Task PublishAsync(Envelope envelope, CancellationToken ct = default);
+    Task SubscribeAsync(string pattern, EnvelopeHandler handler, CancellationToken ct = default);
+    Task StartAsync(CancellationToken ct = default);
+    Task StopAsync(CancellationToken ct = default);
 }
+

@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using AethericForge.Runtime.Bus.Abstractions;
-using AethericForge.Runtime.Model.Messages;
+using AethericForge.Runtime.Util;
 
 namespace AethericForge.Runtime.Bus.Transports;
 
@@ -10,24 +10,24 @@ namespace AethericForge.Runtime.Bus.Transports;
 /// </summary>
 public class InMemoryTransport : ITransport
 {
-    private readonly ConcurrentDictionary<string, List<MessageHandler>> _routes = new();
+    private readonly ConcurrentDictionary<string, List<EnvelopeHandler>> _routes = new();
     private volatile bool _started;
 
-    public Task Start()
+    public Task StartAsync(CancellationToken ct = default)
     {
         _started = true;
         return Task.CompletedTask;
     }
 
-    public Task Stop()
+    public Task StopAsync(CancellationToken ct = default)
     {
         _started = false;
         return Task.CompletedTask;
     }
 
-    public Task Subscribe(string pattern, MessageHandler handler)
+    public Task SubscribeAsync(string pattern, EnvelopeHandler handler, CancellationToken ct = default)
     {
-        var list = _routes.GetOrAdd(pattern, _ => new List<MessageHandler>());
+        var list = _routes.GetOrAdd(pattern, _ => new List<EnvelopeHandler>());
         lock (list)
         {
             list.Add(handler);
@@ -35,29 +35,31 @@ public class InMemoryTransport : ITransport
         return Task.CompletedTask;
     }
 
-    public Task Publish(Message msg)
+    public Task PublishAsync(Envelope envelope, CancellationToken ct = default)
     {
         if (!_started)
             throw new InvalidOperationException("Transport not started");
+        
+        string routingKey = RoutingHelpers.ResolveRoutingKey(envelope);
 
-        var handlers = CollectHandlers(msg.Type);
+        var handlers = CollectHandlers(routingKey);
         if (handlers.Count == 0) return Task.CompletedTask;
 
         // invoke sequentially to keep deterministic behavior for tests
-        return InvokeAll(handlers, msg);
+        return InvokeAll(handlers, envelope, ct);
     }
 
-    private static async Task InvokeAll(List<MessageHandler> handlers, Message msg)
+    private static async Task InvokeAll(List<EnvelopeHandler> handlers, Envelope envelope, CancellationToken ct = default)
     {
         foreach (var h in handlers)
         {
-            await h(msg);
+            await h(envelope, ct);
         }
     }
 
-    private List<MessageHandler> CollectHandlers(string routingKey)
+    private List<EnvelopeHandler> CollectHandlers(string routingKey)
     {
-        var result = new List<MessageHandler>();
+        var result = new List<EnvelopeHandler>();
         foreach (var kv in _routes)
         {
             var list = kv.Value;

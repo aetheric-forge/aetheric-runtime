@@ -2,12 +2,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AethericForge.Runtime.Util\AethericForge.Runtime.Util.csproj" />
-    <ProjectReference Include="..\AethericForge.Runtime.Model\AethericForge.Runtime.Model.csproj" />
     <ProjectReference Include="..\AethericForge.Runtime.Repo.Abstractions\AethericForge.Runtime.Repo.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MongoDB.Driver" Version="3.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
   <PropertyGroup>
