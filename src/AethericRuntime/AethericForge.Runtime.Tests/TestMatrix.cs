@@ -3,6 +3,7 @@ using AethericForge.Runtime.Bus.Abstractions;
 using AethericForge.Runtime.Bus.Transports;
 using AethericForge.Runtime.Repo;
 using AethericForge.Runtime.Repo.Abstractions;
+using System.Runtime.InteropServices;
 
 namespace AethericForge.Runtime.Tests;
 
@@ -22,6 +23,24 @@ public static class TestMatrix
             })
         };
 
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            yield return new object[]
+            {
+                (Func<(ITransport transport, IBroker broker)>)(() =>
+                {
+                    var socketPath = Path.Combine(Path.GetTempPath(), $"aetheric-{Guid.NewGuid():N}.sock");
+                    var t = new UnixSocketTransport(new UnixSocketTransportOptions
+                    {
+                        SocketPath = socketPath,
+                        ActAsServer = true,
+                    });
+                    IBroker b = new MessageBroker(t);
+                    return (t, b);
+                })
+            };
+        }
+
         // RabbitMQ case (optional)
         var rabbitUrl = Environment.GetEnvironmentVariable("RABBITMQ_URL");
         if (!string.IsNullOrWhiteSpace(rabbitUrl))
@@ -33,6 +52,30 @@ public static class TestMatrix
                     var t = new RabbitMqTransport(rabbitUrl, "aetheric-tests");
                     IBroker b = new MessageBroker(t);
                     return (t, b);
+                })
+            };
+        }
+    }
+
+    public static IEnumerable<object[]> HostTransportCases()
+    {
+        yield return new object[]
+        {
+            (Func<ITransport>)(() => new InMemoryTransport())
+        };
+
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            yield return new object[]
+            {
+                (Func<ITransport>)(() =>
+                {
+                    var socketPath = Path.Combine(Path.GetTempPath(), $"aetheric-host-{Guid.NewGuid():N}.sock");
+                    return new UnixSocketTransport(new UnixSocketTransportOptions
+                    {
+                        SocketPath = socketPath,
+                        ActAsServer = true,
+                    });
                 })
             };
         }

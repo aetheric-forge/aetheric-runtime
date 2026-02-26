@@ -1,4 +1,4 @@
-namespace AethericForge.Runtime.Bus.Transport;
+namespace AethericForge.Runtime.Bus;
 
 public sealed class TransportEnvelope
 {

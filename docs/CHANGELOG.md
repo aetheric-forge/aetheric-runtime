@@ -1,3 +1,34 @@
+v1.0.1 - Transport contract alignment and Unix socket test integration
+
+### High-Level Summary
+Primary goals of this update:
+1.  **Align transport startup behavior**: ensure pre-start route registration works consistently across transports.
+2.  **Integrate Unix socket transport into shared contract tests**: keep tests transport-agnostic.
+3.  **Improve lifecycle coverage**: validate host build/start route flow across multiple transport types.
+
+---
+
+### Key Changes Breakdown
+
+#### 1. Transport contract alignment
+*   `UnixSocketTransport` now accepts `SubscribeAsync(...)` before `StartAsync` in client mode by queuing subscriptions and flushing them at start.
+*   `UnixSocketTransport.PublishAsync(...)` now throws `InvalidOperationException("Transport not started")` before start, matching other transport implementations.
+
+#### 2. Transport-agnostic bus tests
+*   `TestMatrix.BusCases()` now includes Unix socket transport in server mode with unique temp socket paths per case.
+*   Unix socket matrix cases are gated to non-Windows environments.
+*   Existing bus contract tests now pass consistently across available transports without external UDS server orchestration.
+
+#### 3. Host lifecycle coverage
+*   Added `HostTests` to verify `AethericHostBuilder.BuildAsync()` route registration and end-to-end publish/handle flow after `StartAsync`.
+*   Added Hosting project reference in test project to support host-level contract coverage.
+
+#### 4. Validation
+*   Test suite status after changes:
+    * `Passed: 25, Failed: 0` on `AethericForge.Runtime.Tests`.
+
+---
+
 v1.0.0 - Re-architected runtime core
 
 ### High-Level Summary

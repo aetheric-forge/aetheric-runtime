@@ -27,6 +27,7 @@
     <ProjectReference Include="..\AethericForge.Runtime.Repo.Abstractions\AethericForge.Runtime.Repo.Abstractions.csproj" />
     <ProjectReference Include="..\AethericForge.Runtime.Bus\AethericForge.Runtime.Bus.csproj" />
     <ProjectReference Include="..\AethericForge.Runtime.Bus.Abstractions\AethericForge.Runtime.Bus.Abstractions.csproj" />
+    <ProjectReference Include="..\AethericForge.Runtime.Hosting\AethericForge.Runtime.Hosting.csproj" />
   </ItemGroup>
 
 </Project>

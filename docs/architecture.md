@@ -16,10 +16,10 @@ production service scaffolding or external API gateway is included.
 
 ## High-level architecture
 
-    +--------------------+        +--------------------+        +----------------------+
-    |  AethericHost      |  pub   |  ITransport        |  route |  Consumers/Handlers  |
-    |  (composition)     +------->|  InMemory/RabbitMQ |------->|  (in-process)         |
-    +--------------------+        +--------------------+        +----------------------+
+    +--------------------+        +------------------------------+        +----------------------+
+    |  AethericHost      |  pub   |  ITransport                  |  route |  Consumers/Handlers  |
+    |  (composition)     +------->|  InMemory/RabbitMQ/UnixSock  +------->|  (in-process)         |
+    +--------------------+        +------------------------------+        +----------------------+
               |
               | uses
               v
@@ -38,8 +38,8 @@ production service scaffolding or external API gateway is included.
 -   `AethericForge.Runtime.Bus`
     -   Implements `MessageBroker`, which wraps a transport and provides
         routing helpers.
-    -   Implements transports: `InMemoryTransport` and
-        `RabbitMqTransport`.
+    -   Implements transports: `InMemoryTransport`,
+        `RabbitMqTransport`, and `UnixSocketTransport`.
 -   `AethericForge.Runtime.Hosting`
     -   Implements `AethericHost` and `AethericHostBuilder`, plus
         handler interfaces and a message context.
@@ -71,6 +71,18 @@ Routing keys are derived from the envelope fields:
 -   Event: `{topic}`
 -   Response/Error: `reply.{client_id}` (from `Meta["client_id"]`)
 
+### Transport contract
+
+The runtime assumes a shared transport lifecycle contract:
+
+-   `SubscribeAsync` may be called before `StartAsync`.
+-   Transports should queue/apply pre-start subscriptions once started.
+-   `PublishAsync` before start should fail with
+    `InvalidOperationException("Transport not started")`.
+
+This keeps `MessageBroker.Route(...)` and host builder route registration
+transport-agnostic.
+
 ### Runtime lifecycle and hosting
 
 The runtime provides a minimal host/composition layer.
@@ -90,6 +102,20 @@ The runtime provides a minimal host/composition layer.
     -   `AddEventHandler<T>(Func<T, MessageContext, Task>)`
     -   `AddHandler<T>(pattern, handler)` (explicit envelope routing)
     -   `AddHandlersFromNamespace(...)`
+
+### Test architecture
+
+Transport contract tests run via a shared matrix:
+
+-   Always include `InMemoryTransport`.
+-   Include `UnixSocketTransport` on non-Windows platforms.
+-   Include `RabbitMqTransport` when `RABBITMQ_URL` is set.
+
+Unix socket cases use unique temporary socket paths per test case to
+avoid collisions between runs.
+
+Host lifecycle coverage validates that routes registered during
+`BuildAsync` are honored after `StartAsync` across transport types.
 
 ## Known gaps
 

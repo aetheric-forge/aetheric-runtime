@@ -7,7 +7,7 @@ abstractions.
 It provides:
 
 -   An envelope-based message bus (`IBroker`, `ITransport`, `Envelope`)
--   Pluggable transports (InMemory, RabbitMQ)
+-   Pluggable transports (InMemory, RabbitMQ, Unix domain sockets)
 -   Pluggable repositories (InMemory, MongoDB)
 -   A minimal application host (`AethericHost`, `AethericHostBuilder`)
 -   Contract-driven tests for routing and persistence semantics
@@ -50,6 +50,7 @@ The C# solution defines:
     -   `MessageBroker`
     -   `InMemoryTransport`
     -   `RabbitMqTransport`
+    -   `UnixSocketTransport`
 -   `AethericForge.Runtime.Hosting`
     -   `AethericHost`, `AethericHostBuilder`, handler interfaces
 -   `AethericForge.Runtime.Repo.Abstractions`
@@ -95,10 +96,18 @@ Routing uses dot-delimited topic semantics with `*` and `#` wildcards.
 -   `PublishAsync(Envelope)`
 -   `Route(pattern, handler)`
 
+Transport contract notes:
+
+-   `SubscribeAsync` is allowed before `StartAsync`; transports are
+    expected to queue pre-start subscriptions and apply them after start.
+-   `PublishAsync` before `StartAsync` should throw
+    `InvalidOperationException("Transport not started")`.
+
 Transports included:
 
 -   `InMemoryTransport` -- deterministic, ideal for tests.
 -   `RabbitMqTransport` -- topic exchange integration.
+-   `UnixSocketTransport` -- local IPC over Unix domain sockets.
 
 ------------------------------------------------------------------------
 
@@ -182,12 +191,8 @@ It provides runtime primitives, not a finished system.
 
 ## Status
 
-v1.0.0 establishes:
+v1.0.1 adds:
 
--   Clear architectural boundaries
--   Transport abstraction via `IBroker`
--   Repository contract semantics
--   Deterministic test infrastructure
-
-Future versions may expand host examples, provisioning patterns, and
-production hardening.
+-   Unix socket transport coverage in the shared bus contract suite
+-   Pre-start subscription contract alignment across transports
+-   Host lifecycle routing coverage across multiple transport types
