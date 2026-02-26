@@ -1,6 +1,6 @@
 namespace AethericForge.Runtime.Bus.Abstractions;
 
-public delegate Task EnvelopeHandler(Envelope envelope, CancellationToken ct = default);
+public delegate Task EnvelopeHandler(Envelope envelope, CancellationToken ct);
 
 public interface ITransport
 {

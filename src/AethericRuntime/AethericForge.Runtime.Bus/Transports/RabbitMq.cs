@@ -4,6 +4,7 @@ using System.Text.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using AethericForge.Runtime.Bus.Abstractions;
+using AethericForge.Runtime.Util;
 
 namespace AethericForge.Runtime.Bus.Transports;
 
@@ -19,24 +20,6 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
     private volatile bool _started;
     private readonly ConcurrentQueue<(string pattern, EnvelopeHandler handler)> _pending = new();
 
-    private string ResolveExchange(Envelope e) =>
-        e.Kind switch
-        {
-            "request" => $"{e.Service}.commands",
-            "event"  => $"{e.Service}.events",
-            "response"  => $"{e.Service}.replies",
-            _ => throw new InvalidOperationException("Unknown envelope kind: {e.Kind}")
-        };
-
-    private string ResolveRoutingKey(Envelope e) =>
-        e.Kind switch
-        {
-            "request" => $"{e.Service}.{e.Verb}",
-            "response" or "error" => $"reply.{e.Meta?["client_id"]}",
-            "event" => e.Topic!,
-            _ => throw new InvalidOperationException("Unknown envelope kind.")
-        }; 
-        
     public async Task StartAsync(CancellationToken ct = default)
     {
         var factory = new ConnectionFactory
@@ -61,11 +44,11 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
     public async Task StopAsync(CancellationToken ct = default)
     {
         _started = false;
-        
+
         // Take local copies to avoid weirdness if Stop() is called twice.
         var channel = _channel;
         var conn = _conn;
-        
+
         // Clear fields early so anything racing against Stop()
         // will see "no longer usable".
         _channel = null;
@@ -84,23 +67,23 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
         }
     }
 
-    public async Task PublishAsync(Envelope envelope,  CancellationToken ct = default)
+    public async Task PublishAsync(Envelope envelope, CancellationToken ct = default)
     {
         if (!_started || _channel is null)
             throw new InvalidOperationException("Transport not started");
 
         var json = JsonSerializer.Serialize(envelope);
         var body = Encoding.UTF8.GetBytes(json);
-        
-       await _channel.BasicPublishAsync(
-            exchange: ResolveExchange(envelope),
-            routingKey: ResolveRoutingKey(envelope),
-            body: body,
-            cancellationToken: ct
-        );
+
+        await _channel.BasicPublishAsync(
+             exchange: exchangeName,
+             routingKey: RoutingHelpers.ResolveRoutingKey(envelope),
+             body: body,
+             cancellationToken: ct
+         );
     }
 
-    public async Task SubscribeAsync(string pattern, EnvelopeHandler handler, CancellationToken  ct = default)
+    public async Task SubscribeAsync(string pattern, EnvelopeHandler handler, CancellationToken ct = default)
     {
         if (!_started || _channel is null)
         {
@@ -111,12 +94,12 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
         await InternalSubscribe(pattern, handler, ct);
     }
 
-    
+
     private static readonly JsonSerializerOptions EnvelopeJson = new()
     {
         PropertyNameCaseInsensitive = true
     };
-    
+
     private async Task InternalSubscribe(string pattern, EnvelopeHandler handler, CancellationToken ct = default)
     {
         if (_channel is null) return;
@@ -128,7 +111,7 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
             exclusive: true,
             autoDelete: true,
             cancellationToken: ct);
-        
+
         ct.ThrowIfCancellationRequested();
 
         await _channel.QueueBindAsync(
@@ -136,7 +119,7 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
             exchange: exchangeName,
             routingKey: pattern,
             cancellationToken: ct);
-        
+
         ct.ThrowIfCancellationRequested();
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
@@ -156,7 +139,7 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
                 EnvelopeValidator.Validate(envelope);
 
                 // 4) Hand off to handler
-                await handler(envelope);
+                await handler(envelope, ct);
 
                 // 5) Ack only after successful handler completion
                 await _channel.BasicAckAsync(ea.DeliveryTag, multiple: false);

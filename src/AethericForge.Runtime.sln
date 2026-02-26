@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Bus.A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Tests", "AethericRuntime\AethericForge.Runtime.Tests\AethericForge.Runtime.Tests.csproj", "{212F645A-B41A-483A-AB0F-124F77642EF5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Hosting", "AethericRuntime\AethericForge.Runtime.Hosting\AethericForge.Runtime.Hosting.csproj", "{1052065C-BFC1-4124-87AD-E05DCC61F905}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{3A0D0869-E172-4117-999E-726CCECA4370}"
 	ProjectSection(SolutionItems) = preProject
 		ARCHITECTURE.md = AethericRuntime\ARCHITECTURE.md
@@ -116,6 +118,18 @@ Global
 		{212F645A-B41A-483A-AB0F-124F77642EF5}.Release|x64.Build.0 = Release|Any CPU
 		{212F645A-B41A-483A-AB0F-124F77642EF5}.Release|x86.ActiveCfg = Release|Any CPU
 		{212F645A-B41A-483A-AB0F-124F77642EF5}.Release|x86.Build.0 = Release|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Debug|x64.Build.0 = Debug|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Debug|x86.Build.0 = Debug|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Release|x64.ActiveCfg = Release|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Release|x64.Build.0 = Release|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Release|x86.ActiveCfg = Release|Any CPU
+		{1052065C-BFC1-4124-87AD-E05DCC61F905}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -126,5 +140,6 @@ Global
 		{96A5BCAA-3D7F-45B4-B0E2-92ACEAD3DBCA} = {2B2C6726-E16E-4266-9336-310C6204CFF8}
 		{036D3271-FE74-4138-935B-C120E74CD7AE} = {2B2C6726-E16E-4266-9336-310C6204CFF8}
 		{212F645A-B41A-483A-AB0F-124F77642EF5} = {AD4CDE37-D154-4F43-8EF2-999176F24C08}
+		{1052065C-BFC1-4124-87AD-E05DCC61F905} = {EB168A90-BFF7-4849-A2D4-3F852B3F38DF}
 	EndGlobalSection
 EndGlobal

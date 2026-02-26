@@ -39,7 +39,7 @@ public class InMemoryTransport : ITransport
     {
         if (!_started)
             throw new InvalidOperationException("Transport not started");
-        
+
         string routingKey = RoutingHelpers.ResolveRoutingKey(envelope);
 
         var handlers = CollectHandlers(routingKey);

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AethericForge.Runtime.Bus.Abstractions\AethericForge.Runtime.Bus.Abstractions.csproj" />
+    <ProjectReference Include="..\AethericForge.Runtime.Bus\AethericForge.Runtime.Bus.csproj" />
+    <ProjectReference Include="..\AethericForge.Runtime.Repo.Abstractions\AethericForge.Runtime.Repo.Abstractions.csproj" />
+    <ProjectReference Include="..\AethericForge.Runtime.Util\AethericForge.Runtime.Util.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -6,15 +6,6 @@ public class BusTests
 {
     public static IEnumerable<object[]> Cases => TestMatrix.BusCases();
 
-    private static Envelope RequestEnvelope(string service, string verb, object payload) =>
-        new()
-        {
-            Kind = "request",
-            Service = service,
-            Verb = verb,
-            Payload = System.Text.Json.JsonSerializer.SerializeToElement(payload)
-        };
-
     private static async Task Eventually(Func<bool> condition, TimeSpan? timeout = null, TimeSpan? poll = null)
     {
         var t = timeout ?? TimeSpan.FromSeconds(2);
@@ -38,7 +29,7 @@ public class BusTests
         broker.Route("alpha.beta", (_, _) => { count++; return Task.CompletedTask; });
 
         var message = new TestModels.TestMessage("alpha.beta");
-        var envelope = RequestEnvelope("alpha", "beta", message);
+        var envelope = new Envelope<TestModels.TestMessage>("alpha.beta", message);
 
         await transport.StartAsync();
         await broker.PublishAsync(envelope);
@@ -59,7 +50,7 @@ public class BusTests
         broker.Route("alpha.beta.gamma", (_, _) => { exact++; return Task.CompletedTask; });
 
         var message = new TestModels.TestMessage("alpha.beta.gamma");
-        var envelope = RequestEnvelope("alpha.beta", "gamma", message);
+        var envelope = new Envelope<TestModels.TestMessage>("alpha.beta.gamma", message);
 
         await transport.StartAsync();
         await broker.PublishAsync(envelope);
@@ -82,7 +73,7 @@ public class BusTests
         await transport.StartAsync();
 
         var message = new TestModels.TestMessage("x.y");
-        var envelope = RequestEnvelope("x", "y", message);
+        var envelope = new Envelope<TestModels.TestMessage>("x.y", message);
         await broker.PublishAsync(envelope);
 
         await Eventually(() => a == 1);
@@ -96,13 +87,13 @@ public class BusTests
     {
         var (transport, broker) = factory();
         var message = new TestModels.TestMessage("a.b");
-        var envelope = RequestEnvelope("a", "b", message);
+        var envelope = new Envelope<TestModels.TestMessage>("a.b", message);
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
             await broker.PublishAsync(envelope);
         });
     }
-    
+
     [Theory]
     [MemberData(nameof(Cases))]
     public async Task Publish_With_No_Matching_Route_Does_Not_Throw(Func<(ITransport transport, IBroker broker)> factory)
@@ -111,14 +102,14 @@ public class BusTests
         await transport.StartAsync();
 
         var message = new TestModels.TestMessage("no.handlers.here");
-        var envelope = RequestEnvelope("no.handlers", "here", message);
+        var envelope = new Envelope<TestModels.TestMessage>("no.handlers.here", message);
 
         var ex = await Record.ExceptionAsync(() =>
             broker.PublishAsync(envelope));
         Assert.Null(ex);
         await transport.StopAsync();
     }
-    
+
     [Theory]
     [MemberData(nameof(Cases))]
     public async Task Star_Wildcard_Does_Not_Match_Extra_Segments(Func<(ITransport transport, IBroker broker)> factory)
@@ -129,7 +120,7 @@ public class BusTests
         broker.Route("alpha.*", (_, _) => { count++; return Task.CompletedTask; });
 
         var message = new TestModels.TestMessage("alpha.beta.gamma");
-        var envelope = RequestEnvelope("alpha.beta", "gamma", message);
+        var envelope = new Envelope<TestModels.TestMessage>("alpha.beta.gamma", message);
 
         await transport.StartAsync();
         await broker.PublishAsync(envelope);
@@ -137,7 +128,7 @@ public class BusTests
         Assert.Equal(0, count);
         await transport.StopAsync();
     }
-    
+
     [Theory]
     [MemberData(nameof(Cases))]
     public async Task Hash_Wildcard_As_Single_Segment_Matches_All(Func<(ITransport transport, IBroker broker)> factory)
@@ -150,14 +141,14 @@ public class BusTests
         await transport.StartAsync();
 
         var message = new TestModels.TestMessage("alpha.beta.gamma");
-        var envelope = RequestEnvelope("alpha.beta", "gamma", message);
+        var envelope = new Envelope<TestModels.TestMessage>("alpha.beta.gamma", message);
 
         await broker.PublishAsync(envelope);
 
         await Eventually(() => count == 1);
         await transport.StopAsync();
     }
-    
+
     [Theory]
     [MemberData(nameof(Cases))]
     public async Task Route_After_Start_Still_Receives_Messages(Func<(ITransport transport, IBroker broker)> factory)
@@ -168,7 +159,7 @@ public class BusTests
         await transport.StartAsync();
         broker.Route("alpha.beta", (_, _) => { count++; return Task.CompletedTask; });
         var message = new TestModels.TestMessage("alpha.beta");
-        var envelope = RequestEnvelope("alpha", "beta", message);
+        var envelope = new Envelope<TestModels.TestMessage>("alpha.beta", message);
 
         await broker.PublishAsync(envelope);
 
