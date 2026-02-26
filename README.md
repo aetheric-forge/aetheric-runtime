@@ -1,20 +1,20 @@
 # Aetheric Runtime
 
 **Aetheric Runtime** is an event-driven runtime library for building
-thread-based domain systems with explicit messaging and repository
+envelope-based services with explicit messaging and repository
 abstractions.
 
 It provides:
 
--   A clean C# domain model (`Domain`, `Saga`, `Story`)
--   A message bus abstraction (`IBroker`, `ITransport`)
+-   An envelope-based message bus (`IBroker`, `ITransport`, `Envelope`)
 -   Pluggable transports (InMemory, RabbitMQ)
 -   Pluggable repositories (InMemory, MongoDB)
+-   A minimal application host (`AethericHost`, `AethericHostBuilder`)
 -   Contract-driven tests for routing and persistence semantics
--   A lightweight FastAPI gateway for HTTP/WebSocket integration
 
-This repository contains runtime building blocks. It does **not**
-include a full application host.
+This repository contains runtime building blocks, including a minimal
+application host. It does **not** include any external service or API
+gateway.
 
 ------------------------------------------------------------------------
 
@@ -44,65 +44,42 @@ complexity.
 
 The C# solution defines:
 
--   `AethericForge.Runtime.Model`
-    -   Domain types and base message classes.
 -   `AethericForge.Runtime.Bus.Abstractions`
-    -   `IBroker`, `ITransport`, and handler contracts.
+    -   `IBroker`, `ITransport`, `Envelope`, and handler contracts.
 -   `AethericForge.Runtime.Bus`
     -   `MessageBroker`
     -   `InMemoryTransport`
     -   `RabbitMqTransport`
+-   `AethericForge.Runtime.Hosting`
+    -   `AethericHost`, `AethericHostBuilder`, handler interfaces
 -   `AethericForge.Runtime.Repo.Abstractions`
-    -   `IRepo` and `FilterSpec`
+    -   `IRepo<T>`, `IFilterSpec`, and `FilterSpec`
 -   `AethericForge.Runtime.Repo`
     -   `InMemoryRepo`
     -   `MongoRepo`
 -   `AethericForge.Runtime.Tests`
     -   Contract tests for bus and repository behavior.
 
-### Python Gateway (`aetheric-runtime-api`)
-
-A FastAPI service that:
-
--   Publishes command envelopes to RabbitMQ
--   Dynamically exposes HTTP endpoints based on RabbitMQ bindings
--   Streams session-scoped events over WebSocket
-
-The API is intentionally thin. It does not implement business logic.
-
 ------------------------------------------------------------------------
 
 ## Core Concepts
 
-### Threads
+### Envelopes
 
-The primary domain entity is `Thread`, with three concrete types:
+Messages are carried in `Envelope` objects. The envelope includes routing
+metadata plus a typed payload (`Envelope<T>`).
 
--   `Domain`
--   `Saga`
--   `Story`
+Envelope kinds:
 
-Each thread includes:
+-   `Request`: requires `Service` and `Verb`
+-   `Event`: requires `Topic`
+-   `Response` / `Error`: require `CorrelationId`
 
--   `Id` (slug-derived if omitted)
--   `Title`
--   `Priority`
--   `Quantum`
--   `Archived` and timestamp metadata
+Routing keys are derived from the envelope:
 
-Repositories return deep copies to preserve snapshot semantics.
-
-------------------------------------------------------------------------
-
-### Messages
-
-Messages derive from `Message` or `Message<TPayload>`.
-
-If a routing key is not explicitly set, it is derived from the class
-name:
-
-    DomainCreated → domain.created
-    StoryUpdated → story.updated
+-   Request: `{service}.{verb}`
+-   Event: `{topic}`
+-   Response/Error: `reply.{client_id}` (from `Meta["client_id"]`)
 
 Routing uses dot-delimited topic semantics with `*` and `#` wildcards.
 
@@ -115,9 +92,8 @@ Routing uses dot-delimited topic semantics with `*` and `#` wildcards.
 
 `MessageBroker` wraps a transport and provides:
 
--   `Publish(Message)`
--   `Emit(routingKey, payload, meta)`
--   `Route(routingKey, handler)`
+-   `PublishAsync(Envelope)`
+-   `Route(pattern, handler)`
 
 Transports included:
 
@@ -141,19 +117,55 @@ Backends:
 -   `InMemoryRepo`
 -   `MongoRepo`
 
-Filtering supports title search, archived state, and thread type.
+Filtering currently supports `Id` via `IFilterSpec`.
+
+------------------------------------------------------------------------
+
+## Minimal Host Example
+
+```csharp
+using AethericForge.Runtime.Bus.Transports;
+using AethericForge.Runtime.Hosting;
+using AethericForge.Runtime.Repo;
+using AethericForge.Runtime.Repo.Abstractions;
+
+public record Ping(Guid Id, string Message) : IEntity;
+
+static async Task Main()
+{
+    var host = await AethericHost.Create("example")
+        .UseTransport(new InMemoryTransport())
+        .UseRepo<IRepo<Ping>>(new InMemoryRepo<Ping>())
+        .AddCommandHandler<Ping>(async (cmd, ctx) =>
+        {
+            var repo = ctx.GetRepo<IRepo<Ping>>();
+            await repo.UpsertAsync(cmd, ctx.CancellationToken);
+        })
+        .BuildAsync();
+
+    await host.StartAsync();
+
+    // Publish a request envelope via the broker (service + verb routing).
+    await host.Broker.PublishAsync(new AethericForge.Runtime.Bus.Abstractions.Envelope<Ping>(
+        "example.Ping", new Ping(Guid.NewGuid(), "hello"))
+    {
+        Kind = AethericForge.Runtime.Bus.Abstractions.EnvelopeKind.Request,
+        Service = "example",
+        Verb = nameof(Ping)
+    });
+
+    await host.StopAsync();
+}
+```
 
 ------------------------------------------------------------------------
 
 ## Environment Configuration
 
-Optional integrations are enabled via environment variables:
+Optional test integrations are enabled via environment variables:
 
     RABBITMQ_URL
     MONGO_URI
-
-The Python API also requires access to the RabbitMQ management API for
-command discovery.
 
 ------------------------------------------------------------------------
 
@@ -161,9 +173,8 @@ command discovery.
 
 This repository intentionally does not include:
 
--   An application host consuming commands and emitting events
 -   Exchange/queue provisioning beyond tests
--   Authentication/authorization for the API
+-   Production-focused host/service scaffolding
 
 It provides runtime primitives, not a finished system.
 

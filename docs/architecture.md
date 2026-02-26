@@ -6,57 +6,46 @@ current code and tests.
 
 ## Scope and intent
 
-The repository contains two distinct parts:
-
--   A C# runtime library that defines the core domain model ("threads"),
-    a message bus abstraction with transports, and a repository
-    abstraction with backends.
--   A Python FastAPI service (`aetheric-runtime-api`) that exposes
-    HTTP/WebSocket endpoints and bridges to RabbitMQ exchanges.
+The repository contains a C# runtime library that defines an
+envelope-based message bus, a minimal application host, and a repository
+abstraction with backends.
 
 These components are designed to work with external services (RabbitMQ,
-MongoDB). The C# runtime does not currently include a host/service layer
-in this repository; it provides building blocks and tests.
+MongoDB). The runtime includes a minimal host/composition layer, but no
+production service scaffolding or external API gateway is included.
 
 ## High-level architecture
 
-    +------------------+          +---------------------+          +----------------------+
-    |  HTTP Clients    |  POST    |  aetheric-runtime-  |  publish |  RabbitMQ            |
-    |  (commands)      +--------->|  api (FastAPI)      +--------->|  parallel_you.commands|
-    +------------------+          +---------------------+          +----------------------+
-                                                                       |
-                                                                       | (handlers live outside this repo)
-                                                                       v
-                                                                +------------------+
-                                                                |  Runtime services|
-                                                                |  (C# libs used)  |
-                                                                +------------------+
-                                                                       |
-                                                                       | publish events
-                                                                       v
-    +------------------+          +---------------------+          +----------------------+
-    |  Web clients     |  WS      |  aetheric-runtime-  |  bind    |  RabbitMQ            |
-    |  (session.*)     +<---------|  api (FastAPI)      +<---------|  parallel_you.events |
-    +------------------+          +---------------------+          +----------------------+
+    +--------------------+        +--------------------+        +----------------------+
+    |  AethericHost      |  pub   |  ITransport        |  route |  Consumers/Handlers  |
+    |  (composition)     +------->|  InMemory/RabbitMQ |------->|  (in-process)         |
+    +--------------------+        +--------------------+        +----------------------+
+              |
+              | uses
+              v
+    +--------------------+
+    |  IRepo<T>          |
+    |  InMemory/MongoDB  |
+    +--------------------+
 
 ## C# runtime library
 
 ### Projects and responsibilities
 
--   `AethericForge.Runtime.Model`
-    -   Defines the core domain types (threads) and message/event base
-        classes.
 -   `AethericForge.Runtime.Bus.Abstractions`
-    -   Defines the message bus interfaces (`IBroker`, `ITransport`) and
-        handler delegate.
+    -   Defines the message bus interfaces (`IBroker`, `ITransport`),
+        `Envelope`, and handler delegate.
 -   `AethericForge.Runtime.Bus`
     -   Implements `MessageBroker`, which wraps a transport and provides
         routing helpers.
     -   Implements transports: `InMemoryTransport` and
         `RabbitMqTransport`.
+-   `AethericForge.Runtime.Hosting`
+    -   Implements `AethericHost` and `AethericHostBuilder`, plus
+        handler interfaces and a message context.
 -   `AethericForge.Runtime.Repo.Abstractions`
-    -   Defines the repository interface (`IRepo`) and filter spec
-        (`FilterSpec`).
+    -   Defines the repository interface (`IRepo<T>`) and filter spec
+        (`IFilterSpec`, `FilterSpec`).
 -   `AethericForge.Runtime.Repo`
     -   Implements repository backends: `InMemoryRepo` and `MongoRepo`.
 -   `AethericForge.Runtime.Util`
@@ -65,106 +54,44 @@ in this repository; it provides building blocks and tests.
     -   Contract tests for bus and repo semantics, including optional
         integration cases when environment variables are set.
 
-### Domain model (Threads)
+### Envelope model and routing keys
 
-The core entity hierarchy is `Thread`, with concrete types:
+Messages are carried in envelopes (`Envelope` / `Envelope<T>`). Each
+envelope includes a `Kind` and routing metadata.
 
--   `Domain`: top-level grouping, optional `Description`.
--   `Saga`: belongs to a `Domain` via `DomainId`.
--   `Story`: belongs to a `Saga` via `SagaId`, includes `Energy` and
-    `StoryState`.
+Envelope kinds and required fields:
 
-All thread types include:
+-   `Request`: requires `Service` and `Verb`
+-   `Event`: requires `Topic`
+-   `Response` / `Error`: require `CorrelationId`
 
--   `Id` (auto-generated from the title via a slug if omitted)
--   `Title`, `Priority`, `Quantum`
--   `Archived`, plus timestamp fields `CreatedAt`, `UpdatedAt`,
-    `ArchivedAt`
+Routing keys are derived from the envelope fields:
 
-Each thread type implements `Clone()`; repositories return deep copies
-rather than internal references.
+-   Request: `{service}.{verb}`
+-   Event: `{topic}`
+-   Response/Error: `reply.{client_id}` (from `Meta["client_id"]`)
 
-### Message model and routing keys
+### Runtime lifecycle and hosting
 
-Messages derive from `Message` / `Message<TPayload>` and include:
+The runtime provides a minimal host/composition layer.
 
--   `Id`, `Timestamp`, optional `CausationId`, `CorrelationId`
--   `Type` which is used as the routing key
+`AethericHost` responsibilities:
 
-If `Type` is not provided explicitly, it is derived from the message
-class name by inserting dots between camel-case segments and lowercasing
-(e.g., `DomainCreated` → `domain.created`).
+-   Start and stop transports (`StartAsync`, `StopAsync`)
+-   Expose the broker (`IBroker`) and registered repositories
+-   Run until cancellation (`RunAsync`)
 
-### Runtime lifecycle and cancellation model (Target Architecture)
+`AethericHostBuilder` responsibilities:
 
-The runtime supports deterministic shutdown, independent component
-lifetimes, and scoped cancellation for handler execution.
-
-#### Root runtime lifetime
-
-``` csharp
-private readonly CancellationTokenSource _shutdownCts = new();
-public CancellationToken ShutdownToken => _shutdownCts.Token;
-```
-
--   The CTS is private.
--   Only the host may call `Cancel()`.
--   Consumers may observe but not trigger shutdown.
-
-#### Component-level lifetime
-
-``` csharp
-var componentCts =
-    CancellationTokenSource.CreateLinkedTokenSource(runtime.ShutdownToken);
-```
-
-Cancellation flows downward from the runtime root.
-
-#### Subscription vs handler execution tokens
-
-Subscription token controls how long the subscription remains active.
-
-Handler invocation receives a derived execution token:
-
-``` csharp
-using var handlerCts =
-    CancellationTokenSource.CreateLinkedTokenSource(subscriptionToken);
-
-handlerCts.CancelAfter(_handlerTimeout);
-
-await handler(envelope, handlerCts.Token);
-```
-
-#### Handler delegate contract
-
-``` csharp
-public delegate Task EnvelopeHandler(
-    Envelope envelope,
-    CancellationToken cancellationToken);
-```
-
-The runtime supplies the correctly scoped token.
-
-### Application host pattern (Target Architecture)
-
-The runtime host is the composition root and owns shutdown authority.
-
-Responsibilities:
-
--   Own a root shutdown CTS
--   Start and stop runtime components
--   Provide a single shutdown pathway
--   Dispose linked CTS instances deterministically
-
-Components:
-
--   Implement start/stop
--   Begin background work in `StartAsync`
--   Stop accepting work in `StopAsync`
--   Derive per-message execution tokens internally
+-   Configure transports (`UseTransport`, `AddTransport`)
+-   Register repositories (`UseRepo`)
+-   Register handlers:
+    -   `AddCommandHandler<T>(Func<T, MessageContext, Task>)`
+    -   `AddEventHandler<T>(Func<T, MessageContext, Task>)`
+    -   `AddHandler<T>(pattern, handler)` (explicit envelope routing)
+    -   `AddHandlersFromNamespace(...)`
 
 ## Known gaps
 
--   A production-ready C# application host/service is not yet included.
 -   RabbitMQ provisioning beyond tests is not defined.
--   Authentication/authorization for the API is not implemented.
+-   Production service scaffolding and deployment templates are not included.

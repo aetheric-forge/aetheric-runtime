@@ -1,35 +1,33 @@
-v1.0.0 - Re-architect for development simplicity
+v1.0.0 - Re-architected runtime core
 
 ### High-Level Summary
 Primary goals of this release:
-1.  **Re-establish architectural clarity**: Documenting the "why" and "how" of the system to help developers (including the original author) re-onboard.
-2.  **Improve test robustness and readability**: Moving away from ad-hoc test setups to a structured "Test Matrix" and "Test Models" approach.
-3.  **Strengthen Abstractions**: Decoupling services from specific transport implementations by moving towards the `IBroker` interface.
-4.  **Expand the system**: Introducing new services (LogService) and refining existing ones.
+1.  **Clarify runtime architecture**: Align docs and code around the envelope-based bus, generic repos, and minimal host.
+2.  **Strengthen abstractions**: Standardize the bus (`IBroker`, `ITransport`) and repo (`IRepo<T>`) boundaries.
+3.  **Stabilize tests**: Keep deterministic, backend-agnostic contract tests for transports and repositories.
 
 ---
 
 ### Key Changes Breakdown
 
-#### 1. Architectural Documentation (`ARCHITECTURE.md`)
-The `ARCHITECTURE.md` file received a major overhaul. It now explicitly defines:
-*   **Philosophy**: "Message-shaped reality" (loose coupling via messages) and "Intentional minimalism."
-*   **Concepts**: Explains the **Envelope Protocol**, **Command/Event Model**, and **Dynamic API Generation** (where FastAPI routes are derived from RabbitMQ bindings).
-*   **Nervous System Analogy**: Describes the system as nodes and packets, similar to biological nervous systems.
+#### 1. Envelope-based Bus
+*   `Envelope` and `EnvelopeKind` are the core message carriers.
+*   Routing keys are derived from envelope fields via `RoutingHelpers`:
+    * Request: `{service}.{verb}`
+    * Event: `{topic}`
+    * Response/Error: `reply.{client_id}`
 
-#### 2. Test Infrastructure Refactoring
-*   **`TestMatrix.cs`**: Introduced a centralized way to run the same test suite against different backends (e.g., testing Repos against both `InMemory` and `Mongo` if a connection string is available).
-*   **`TestModels.cs`**: A new helper class that provides factory methods for domain objects (`Domain`, `Saga`, `Story`) and their corresponding messages, ensuring consistent test data across the project.
-*   **`MessageTests.cs`**: Added dedicated tests for the base `Message` class, specifically verifying how routing keys (e.g., `domain.created`) are automatically derived from class names (e.g., `DomainCreated`).
-*   **Cleaned up `RepoTests.cs`**: Refactored to be backend-agnostic by using the `TestMatrix` cases.
+#### 2. Minimal Host Layer
+*   `AethericHost` starts/stops transports and exposes the broker and repos.
+*   `AethericHostBuilder` composes transports, repos, and handlers.
+*   Handler patterns include `ICommandHandler<T>`, `IEventHandler<T>`, and explicit envelope routes.
 
-#### 3. Service and Logic Changes
-*   **`ParallelYou.LogService`**: A brand new microservice was added to handle logging commands/events, demonstrating how the system can be extended by simply adding a new consumer to the bus.
-*   **`ThreadService` Refinement**: The `ThreadCommandWorker` was refactored to use the `IBroker` abstraction instead of interacting with the transport layer directly. This aligns with the "Service Pattern" described in the updated documentation.
-*   **Decoupling**: The commit removed several direct dependencies and hardcoded logic in favor of the message-driven approach.
+#### 3. Repo Abstractions and Backends
+*   `IRepo<T>` and `IFilterSpec` define generic storage.
+*   `InMemoryRepo<T>` and `MongoRepo<T>` provide concrete backends.
 
-#### 4. Project Infrastructure
-*   **Solution/Projects**: Updated `ParallelYou.sln` to include the new `LogService`.
-*   **Dependencies**: Synchronized versions and references across `.csproj` files.
-*   **Cleanup**: Removed unused files like `global.json` and consolidated redundant classes (e.g., moving `Envelope.cs` to shared namespaces).
+#### 4. Tests
+*   `TestMatrix` runs bus and repo contract tests across optional backends.
+*   `BusTests` verify topic matching, wildcard routing, and start/stop behavior.
+*   `RepoTests` verify deep-copy semantics, upsert, delete, and list behavior.
  
