@@ -41,6 +41,19 @@ public sealed class Envelope<T> : Envelope where T : notnull
 {
     public T Payload { get; }
 
+    internal Envelope(
+        string routingKey,
+        T payload,
+        EnvelopeKind kind,
+        string? service,
+        string? verb) : base(routingKey)
+    {
+        Payload = payload;
+        Kind = kind;
+        Service = service;
+        Verb = verb;
+    }
+
     public Envelope(string routingKey, T payload) : base(routingKey)
     {
         Payload = payload ?? throw new ArgumentNullException(nameof(payload));
