@@ -48,7 +48,8 @@ internal static class EnvelopeSerializer
             payload,
             Enum.Parse<EnvelopeKind>(transport.Kind),
             transport.Service,
-            transport.Verb);
+            transport.Verb) ??
+            throw new NullReferenceException("Envelope<T> ctor returned null");
 
         return (Envelope<object>)envelope;
     }
