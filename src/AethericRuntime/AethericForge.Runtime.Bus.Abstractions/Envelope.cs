@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace AethericForge.Runtime.Bus.Abstractions;
 
 public enum EnvelopeKind
@@ -10,60 +12,113 @@ public enum EnvelopeKind
 
 public abstract class Envelope
 {
-    public string RoutingKey { get; }
+    public string QueueName =>
+        Kind switch
+        {
+            EnvelopeKind.Request => $"{Service!}.{Verb}",
+            EnvelopeKind.Response => $"{Service!}.responses",
+            EnvelopeKind.Event => $"{Service!}.responses",
+            EnvelopeKind.Error => $"{Service!}.errors",
+            _ => throw new ArgumentOutOfRangeException(nameof(Kind)),
+        };
+    public Guid Id { get; protected init; } = Guid.NewGuid();
+    public int Version { get; protected init; } = 1;
 
-    public Guid Id { get; init; } = Guid.NewGuid();
-    public int Version { get; init; } = 1;
+    public EnvelopeKind Kind { get; protected init; }
+    public RouteKey RouteKey { get; protected init; } = new(EnvelopeKind.Request, "");
 
-    public EnvelopeKind Kind { get; init; }
+    public string Service { get; protected init; } = "";
+    public string? Verb { get; protected init; }
+    public string? Topic { get; protected init; }
 
-    public string? Service { get; init; }
-    public string? Verb { get; init; }
-    public string? Topic { get; init; }
+    public Guid? CorrelationId { get; protected init; }
+    public Guid? CausationId { get; protected init; }
 
-    public Guid? CorrelationId { get; init; }
-    public Guid? CausationId { get; init; }
+    public Dictionary<string, string> Meta { get; protected init; } = new Dictionary<string, string>();
 
-    public Dictionary<string, string>? Meta { get; init; }
-
-    public DateTimeOffset Timestamp { get; }
-
-    protected Envelope(string routingKey)
-    {
-        RoutingKey = routingKey;
-        Timestamp = DateTimeOffset.UtcNow;
-    }
+    public DateTimeOffset Timestamp { get; protected init; } = DateTimeOffset.UtcNow;
 
     public abstract object UntypedPayload { get; }
+
+    public TransportEnvelope AsTransportEnvelope(JsonSerializerOptions? opts = null)
+    {
+        // Prefer the generic argument if this is Envelope<T>, otherwise fall back to runtime payload type.
+        var messageType =
+            GetType().BaseType?.IsGenericType == true &&
+            GetType().BaseType!.GetGenericTypeDefinition().Name.StartsWith("Envelope`", StringComparison.Ordinal)
+                ? GetType().BaseType!.GetGenericArguments()[0].AssemblyQualifiedName
+                : UntypedPayload?.GetType().AssemblyQualifiedName;
+
+        if (string.IsNullOrWhiteSpace(messageType))
+            throw new InvalidOperationException("Cannot determine payload message type (T).");
+
+        if (UntypedPayload is null)
+            throw new InvalidOperationException("Cannot serialize null payload.");
+
+        // Serialize as UTF-8 JSON to avoid an intermediate string allocation.
+        // If you have source-gen contexts, you may want to route through those instead.
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(UntypedPayload, UntypedPayload.GetType(), opts);
+
+        // NOTE: this passes the dictionary reference through; if you need immutability, clone/copy it here.
+        return new TransportEnvelope(
+                MessageType: messageType,
+                Kind: Kind,
+                RouteKey: new RouteKey(EnvelopeKind.Request, Service, Verb, Topic),
+                Id: Id,
+                Version: Version,
+                Timestamp: Timestamp,
+                CorrelationId: CorrelationId,
+                CausationId: CausationId,
+                Payload: bytes,
+                Meta: Meta);
+    }
 }
 
 public sealed class Envelope<T> : Envelope where T : notnull
 {
     public T Payload { get; }
 
-    internal Envelope(
-        string routingKey,
-        T payload,
-        EnvelopeKind kind,
-        string? service,
-        string? verb) : base(routingKey)
-    {
-        Payload = payload;
-        Kind = kind;
-        Service = service;
-        Verb = verb;
-    }
-
-    public Envelope(string routingKey, T payload) : base(routingKey)
+    public Envelope(
+            EnvelopeKind kind,
+            T payload,
+            Dictionary<string, string>? meta = null,
+            RouteKey? routeKey = null,
+            Guid? id = null,
+            Guid? correlationId = null,
+            Guid? causationId = null,
+            DateTimeOffset? timestamp = null)
     {
         Payload = payload ?? throw new ArgumentNullException(nameof(payload));
-
-        // default to event type unless overridden in initializer
-        Kind = EnvelopeKind.Event;
-        Topic = routingKey;
+        Kind = kind;
+        RouteKey = routeKey ?? throw new ArgumentNullException(nameof(routeKey));
+        Id = Guid.NewGuid();
+        CorrelationId = Guid.NewGuid();
+        Meta = meta ?? new();
+        RouteKey = routeKey;
+        Id = id ?? Guid.NewGuid();
+        CorrelationId = correlationId;
+        CausationId = correlationId;
+        Timestamp = timestamp ?? DateTimeOffset.UtcNow;
     }
 
     public override object UntypedPayload => Payload;
+
+    public static Envelope<T> FromTransportEnvelope(TransportEnvelope te)
+    {
+        var messageType = Type.GetType(te.MessageType) ??
+            throw new InvalidOperationException($"parsed unknown message type '{te.MessageType}");
+        if (messageType != typeof(T).GetType())
+            throw new InvalidOperationException($"request to deserialize '{te.MessageType}' to '{typeof(T).Name}");
+        var payload = JsonSerializer.Deserialize<T>(te.Payload.Span) ??
+            throw new JsonException($"failed to deserialize object of type '{te.MessageType}");
+        return new Envelope<T>
+            (
+                kind: te.Kind,
+                payload: payload,
+                meta: te.Meta,
+                routeKey: te.RouteKey
+            );
+    }
 }
 
 public static class EnvelopeValidator

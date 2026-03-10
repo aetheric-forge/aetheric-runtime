@@ -4,7 +4,6 @@ using System.Text.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using AethericForge.Runtime.Bus.Abstractions;
-using AethericForge.Runtime.Util;
 
 namespace AethericForge.Runtime.Bus.Transports;
 
@@ -77,21 +76,21 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
 
         await _channel.BasicPublishAsync(
              exchange: exchangeName,
-             routingKey: RoutingHelpers.ResolveRoutingKey(envelope),
+             routingKey: envelope.RouteKey.QueueName,
              body: body,
              cancellationToken: ct
          );
     }
 
-    public async Task SubscribeAsync(string pattern, EnvelopeHandler handler, CancellationToken ct = default)
+    public async Task SubscribeAsync(RouteKey routeKey, EnvelopeHandler handler, CancellationToken ct = default)
     {
         if (!_started || _channel is null)
         {
-            _pending.Enqueue((pattern, handler));
+            _pending.Enqueue((routeKey.QueueName, handler));
             return; // will be bound on Start()
         }
 
-        await InternalSubscribe(pattern, handler, ct);
+        await InternalSubscribe(routeKey.QueueName, handler, ct);
     }
 
 

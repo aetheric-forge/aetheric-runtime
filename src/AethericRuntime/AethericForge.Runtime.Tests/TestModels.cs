@@ -11,6 +11,7 @@ public static class TestModels
         public Guid Id { get; init; }
         public string Message { get; init; }
 
+
         public TestMessage(string message)
         {
             Id = Guid.NewGuid();

@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using AethericForge.Runtime.Bus.Abstractions;
-using AethericForge.Runtime.Util;
 
 namespace AethericForge.Runtime.Bus.Transports;
 
@@ -10,7 +9,7 @@ namespace AethericForge.Runtime.Bus.Transports;
 /// </summary>
 public class InMemoryTransport : ITransport
 {
-    private readonly ConcurrentDictionary<string, List<EnvelopeHandler>> _routes = new();
+    private readonly ConcurrentDictionary<RouteKey, List<EnvelopeHandler>> _routes = new();
     private volatile bool _started;
 
     public Task StartAsync(CancellationToken ct = default)
@@ -25,9 +24,9 @@ public class InMemoryTransport : ITransport
         return Task.CompletedTask;
     }
 
-    public Task SubscribeAsync(string pattern, EnvelopeHandler handler, CancellationToken ct = default)
+    public Task SubscribeAsync(RouteKey routeKey, EnvelopeHandler handler, CancellationToken ct = default)
     {
-        var list = _routes.GetOrAdd(pattern, _ => new List<EnvelopeHandler>());
+        var list = _routes.GetOrAdd(routeKey, _ => new List<EnvelopeHandler>());
         lock (list)
         {
             list.Add(handler);
@@ -40,9 +39,7 @@ public class InMemoryTransport : ITransport
         if (!_started)
             throw new InvalidOperationException("Transport not started");
 
-        string routingKey = RoutingHelpers.ResolveRoutingKey(envelope);
-
-        var handlers = CollectHandlers(routingKey);
+        var handlers = CollectHandlers(envelope.RouteKey);
         if (handlers.Count == 0) return Task.CompletedTask;
 
         // invoke sequentially to keep deterministic behavior for tests
@@ -57,13 +54,13 @@ public class InMemoryTransport : ITransport
         }
     }
 
-    private List<EnvelopeHandler> CollectHandlers(string routingKey)
+    private List<EnvelopeHandler> CollectHandlers(RouteKey routingKey)
     {
         var result = new List<EnvelopeHandler>();
         foreach (var kv in _routes)
         {
             var list = kv.Value;
-            bool match = TopicMatch(kv.Key, routingKey);
+            bool match = routingKey == kv.Key;
             if (!match) continue;
             lock (list)
             {
@@ -71,42 +68,5 @@ public class InMemoryTransport : ITransport
             }
         }
         return result;
-    }
-
-    // Topic-style matcher with '.'-separated segments.
-    // '*' matches a single segment, '#' matches zero or more segments.
-    private static bool TopicMatch(string pattern, string key)
-    {
-        if (pattern == "#") return true;
-        var p = pattern.Split('.');
-        var k = key.Split('.');
-
-        int i = 0, j = 0;
-        while (i < p.Length && j < k.Length)
-        {
-            var ps = p[i];
-            if (ps == "#")
-            {
-                // consume rest of key
-                return true;
-            }
-            if (ps == "*" || ps == k[j])
-            {
-                i++; j++;
-                continue;
-            }
-            return false;
-        }
-
-        // if key remains but pattern ended (without '#') → no match
-        if (j < k.Length && (i >= p.Length || p[^1] != "#")) return false;
-
-        // allow trailing '#' in pattern
-        if (i < p.Length)
-        {
-            if (p[i] == "#" && i == p.Length - 1) return true;
-        }
-
-        return i == p.Length && j == k.Length;
     }
 }

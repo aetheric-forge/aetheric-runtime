@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using AethericForge.Runtime.Bus.Abstractions;
 
@@ -14,18 +15,17 @@ internal static class EnvelopeSerializer
     public static TransportEnvelope Serialize<T>(Envelope<T> envelope)
         where T : notnull
     {
+        var json = JsonSerializer.Serialize<T>(envelope.Payload);
+
         return new TransportEnvelope
         {
-            RoutingKey = envelope.RoutingKey,
-            MessageType = typeof(T).AssemblyQualifiedName!,
-            PayloadJson = JsonSerializer.Serialize(envelope.Payload, _json),
-            Kind = envelope.Kind.ToString(),
-            Service = envelope.Service ?? "",
-            Verb = envelope.Verb ?? ""
+            MessageType = typeof(T).Name,
+            Meta = envelope.Meta,
+            Payload = Encoding.UTF8.GetBytes(json),
         };
     }
 
-    public static Envelope<object> Deserialize(
+    public static Envelope Deserialize(
             TransportEnvelope transport)
     {
         var type = Type.GetType(transport.MessageType)
@@ -35,21 +35,15 @@ internal static class EnvelopeSerializer
         var envelopeType = typeof(Envelope<>).MakeGenericType(type);
 
         var payload = JsonSerializer.Deserialize(
-            transport.PayloadJson,
+            transport.Payload.Span,
             type,
             _json) ?? throw new InvalidOperationException(
                 $"Failed to deserialize payload for '{transport.MessageType}'.");
 
         // Create envelope instance
-        var envelope = Activator.CreateInstance(
-            envelopeType,
-            transport.RoutingKey,
-            payload,
-            Enum.Parse<EnvelopeKind>(transport.Kind),
-            transport.Service,
-            transport.Verb) ??
-            throw new NullReferenceException("Envelope<T> ctor returned null");
+        var envelope = Activator.CreateInstance(envelopeType, payload) ??
+           throw new NullReferenceException("Envelope<T> ctor returned null");
 
-        return (Envelope<object>)envelope;
+        return (Envelope)envelope;
     }
 }

@@ -8,7 +8,7 @@ public class MessageBroker(ITransport transport) : IBroker
 
     public Task PublishAsync(Envelope envelope, CancellationToken ct = default) => Transport.PublishAsync(envelope, ct);
 
-    public void Route(string routingKey, EnvelopeHandler handler)
+    public void Route(RouteKey routingKey, EnvelopeHandler handler)
     {
         // fire-and-forget subscribe; tests can await Start()
         Transport.SubscribeAsync(routingKey, handler).GetAwaiter().GetResult();

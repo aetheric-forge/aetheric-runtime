@@ -1,7 +1,6 @@
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
-using System.Text;
 using System.Text.Json;
 using AethericForge.Runtime.Bus.Abstractions;
 
@@ -17,7 +16,7 @@ public sealed class UnixSocketTransport : ITransport, IAsyncDisposable
     private readonly JsonSerializerOptions _json;
 
     // Local (in-process) subscriptions
-    private readonly ConcurrentDictionary<string, ConcurrentBag<EnvelopeHandler>> _localHandlers = new();
+    private readonly ConcurrentDictionary<RouteKey, ConcurrentBag<EnvelopeHandler>> _localHandlers = new();
 
     // Server state
     private Socket? _listenSocket;
@@ -41,13 +40,12 @@ public sealed class UnixSocketTransport : ITransport, IAsyncDisposable
         };
     }
 
-    public Task SubscribeAsync(string pattern, EnvelopeHandler handler, CancellationToken ct = default)
+    public Task SubscribeAsync(RouteKey routeKey, EnvelopeHandler handler, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(pattern)) throw new ArgumentException("Pattern must be provided.", nameof(pattern));
         if (handler is null) throw new ArgumentNullException(nameof(handler));
 
         // Always register locally so deliveries get handled in this process.
-        var bag = _localHandlers.GetOrAdd(pattern, _ => new ConcurrentBag<EnvelopeHandler>());
+        var bag = _localHandlers.GetOrAdd(routeKey, _ => new ConcurrentBag<EnvelopeHandler>());
         bag.Add(handler);
 
         // If we're a client, also inform the server so it routes deliveries to us.
@@ -56,11 +54,11 @@ public sealed class UnixSocketTransport : ITransport, IAsyncDisposable
             var conn = _clientConn;
             if (conn is null)
             {
-                _pendingClientSubscriptions.Enqueue(pattern);
+                _pendingClientSubscriptions.Enqueue(routeKey.QueueName);
                 return Task.CompletedTask;
             }
 
-            return conn.SendAsync(new WireMessage { Type = "subscribe", Pattern = pattern }, _json, ct);
+            return conn.SendAsync(new WireMessage { Type = "subscribe", Pattern = routeKey.QueueName }, _json, ct);
         }
 
         // If server mode, local subscriptions are enough (server routes to local via DispatchLocalAsync).
@@ -282,14 +280,12 @@ public sealed class UnixSocketTransport : ITransport, IAsyncDisposable
 
         foreach (var kv in _localHandlers)
         {
-            var pattern = kv.Key;
-            if (!TopicMatcher.IsMatch(pattern, routingKey)) continue;
-
-            foreach (var handler in kv.Value)
-            {
-                // Fire sequentially to preserve determinism; change to parallel if you want.
-                await handler(envelope, ct).ConfigureAwait(false);
-            }
+            if (envelope.RouteKey == kv.Key)
+                foreach (var handler in kv.Value)
+                {
+                    // Fire sequentially to preserve determinism; change to parallel if you want.
+                    await handler(envelope, ct).ConfigureAwait(false);
+                }
         }
     }
 

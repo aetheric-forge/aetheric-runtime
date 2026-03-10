@@ -105,7 +105,7 @@ public static class TestMatrix
                         () =>
                         {
                             // database/collection names defaulted as in app Program.cs
-                            return ctor.Invoke(new[] { mongoUri, "parallel_you", "threads" });
+                            return ctor.Invoke(new[] { mongoUri, "aetheric-runtime", "tests" });
                         }
                     };
                 }

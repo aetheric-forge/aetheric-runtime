@@ -1,7 +1,4 @@
-using AethericForge.Runtime.Bus.Abstractions;
-using AethericForge.Runtime.Util;
-
-namespace AethericForge.Runtime.Hosting;
+namespace AethericForge.Runtime.Bus.Abstractions;
 
 public sealed class MessageContext
 {
@@ -40,17 +37,10 @@ public sealed class MessageContext
         if (payload is null)
             throw new ArgumentNullException(nameof(payload));
 
-        var routingKey = RoutingHelpers.ResolveRoutingKey(
-            EnvelopeKind.Request,
-            ServiceName,
-            typeof(T).Name);
-
-        var envelope = new Envelope<T>(routingKey, payload)
-        {
-            Kind = EnvelopeKind.Request,
-            Service = ServiceName,
-            Verb = typeof(T).Name
-        };
+        var envelope = new Envelope<T>(EnvelopeKind.Request,
+                payload,
+                meta: new(),
+                routeKey: new RouteKey(EnvelopeKind.Request, service: ServiceName, verb: typeof(T).Name));
 
         return Broker.PublishAsync(envelope, CancellationToken);
     }
