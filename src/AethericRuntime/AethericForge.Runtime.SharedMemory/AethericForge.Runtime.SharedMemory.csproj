@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../AethericForge.Runtime.SharedMemory.Abstractions/AethericForge.Runtime.SharedMemory.Abstractions.csproj" />
+    <PackageReference Include="StackExchange.Redis" Version="2.6.123" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latestmajor</LangVersion>
+  </PropertyGroup>
+
+</Project>

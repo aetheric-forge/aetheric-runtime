@@ -12,7 +12,15 @@ namespace AethericForge.Runtime.Bus.Transports;
 /// Uses a topic exchange; each subscription creates a transient, exclusive queue
 /// bound with the provided binding key (supports * and # like RabbitMQ topics).
 /// </summary>
-public sealed class RabbitMqTransport(string url, string exchangeName) : ITransport
+public sealed class RabbitMqTransport(
+    string url,
+    string exchangeName,
+    bool durableExchange = true,
+    bool autoDeleteExchange = false,
+    bool durableQueues = true,
+    bool exclusiveQueues = false,
+    bool autoDeleteQueues = false,
+    string? queueNamePrefix = null) : ITransport
 {
     private IConnection? _conn;
     private IChannel? _channel;
@@ -30,7 +38,12 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
         _conn = await factory.CreateConnectionAsync(ct);
         _channel = await _conn.CreateChannelAsync(cancellationToken: ct);
         // Non-durable, auto-delete exchange suitable for tests
-        await _channel.ExchangeDeclareAsync(exchangeName, ExchangeType.Topic, durable: false, autoDelete: true, cancellationToken: ct);
+        await _channel.ExchangeDeclareAsync(
+            exchangeName,
+            ExchangeType.Topic,
+            durable: durableExchange,
+            autoDelete: autoDeleteExchange,
+            cancellationToken: ct);
         _started = true;
 
         // drain any pending subscriptions that were registered before Start()
@@ -76,7 +89,7 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
 
         await _channel.BasicPublishAsync(
              exchange: exchangeName,
-             routingKey: envelope.RouteKey.QueueName,
+             routingKey: ResolveRoutingKey(envelope),
              body: body,
              cancellationToken: ct
          );
@@ -86,29 +99,33 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
     {
         if (!_started || _channel is null)
         {
-            _pending.Enqueue((routeKey.QueueName, handler));
+            _pending.Enqueue((ResolveRoutingKey(routeKey), handler));
             return; // will be bound on Start()
         }
 
-        await InternalSubscribe(routeKey.QueueName, handler, ct);
+        await InternalSubscribe(ResolveRoutingKey(routeKey), handler, ct);
     }
 
 
-    private static readonly JsonSerializerOptions EnvelopeJson = new()
+    private static readonly JsonSerializerOptions EnvelopeJson = new(JsonSerializerDefaults.Web)
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = false
     };
 
     private async Task InternalSubscribe(string pattern, EnvelopeHandler handler, CancellationToken ct = default)
     {
         if (_channel is null) return;
 
-        // Create an exclusive, auto-delete queue per handler
+        var queueName = queueNamePrefix is null
+            ? $"aetheric-{exchangeName}-{pattern}-{Guid.NewGuid():N}".Replace("*", "_star_").Replace("#", "_hash_")
+            : BuildQueueName(queueNamePrefix, pattern);
+
         var queue = await _channel.QueueDeclareAsync(
-            queue: string.Empty,
-            durable: false,
-            exclusive: true,
-            autoDelete: true,
+            queue: queueName,
+            durable: durableQueues,
+            exclusive: exclusiveQueues,
+            autoDelete: autoDeleteQueues,
             cancellationToken: ct);
 
         ct.ThrowIfCancellationRequested();
@@ -120,6 +137,12 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
             cancellationToken: ct);
 
         ct.ThrowIfCancellationRequested();
+
+        await _channel.BasicQosAsync(
+            prefetchSize: 0,
+            prefetchCount: 10,
+            global: false,
+            cancellationToken: ct);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
 
@@ -155,4 +178,30 @@ public sealed class RabbitMqTransport(string url, string exchangeName) : ITransp
             autoAck: false,
             consumer: consumer);
     }
+
+    private static string ResolveRoutingKey(RouteKey routeKey) =>
+        routeKey.Kind switch
+        {
+            EnvelopeKind.Request => $"{routeKey.Service}.{routeKey.Verb}",
+            EnvelopeKind.Event => routeKey.Topic ?? throw new InvalidOperationException("Event requires Topic."),
+            EnvelopeKind.Response or EnvelopeKind.Error =>
+                throw new InvalidOperationException("Response/Error routing requires client_id metadata."),
+            _ => throw new InvalidOperationException($"Unknown envelope kind: {routeKey.Kind}")
+        };
+
+    private static string ResolveRoutingKey(Envelope envelope) =>
+        envelope.Kind switch
+        {
+            EnvelopeKind.Request => $"{envelope.Service}.{envelope.Verb}",
+            EnvelopeKind.Event => envelope.Topic ?? throw new InvalidOperationException("Event requires Topic."),
+            EnvelopeKind.Response or EnvelopeKind.Error =>
+                $"reply.{envelope.Meta["client_id"]}",
+            _ => throw new InvalidOperationException($"Unknown envelope kind: {envelope.Kind}")
+        };
+
+    private static string BuildQueueName(string prefix, string pattern) =>
+        $"{prefix}.{pattern}"
+            .Replace("*", "_star_")
+            .Replace("#", "_hash_")
+            .Replace("..", ".");
 }

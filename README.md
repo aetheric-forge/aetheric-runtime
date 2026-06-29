@@ -7,7 +7,7 @@ abstractions.
 It provides:
 
 -   An envelope-based message bus (`IBroker`, `ITransport`, `Envelope`)
--   Pluggable transports (InMemory, RabbitMQ, Unix domain sockets)
+-   Pluggable transports (InMemory, RabbitMQ)
 -   Pluggable repositories (InMemory, MongoDB)
 -   A minimal application host (`AethericHost`, `AethericHostBuilder`)
 -   Contract-driven tests for routing and persistence semantics
@@ -50,7 +50,6 @@ The C# solution defines:
     -   `MessageBroker`
     -   `InMemoryTransport`
     -   `RabbitMqTransport`
-    -   `UnixSocketTransport`
 -   `AethericForge.Runtime.Hosting`
     -   `AethericHost`, `AethericHostBuilder`, handler interfaces
 -   `AethericForge.Runtime.Repo.Abstractions`
@@ -107,7 +106,8 @@ Transports included:
 
 -   `InMemoryTransport` -- deterministic, ideal for tests.
 -   `RabbitMqTransport` -- topic exchange integration.
--   `UnixSocketTransport` -- local IPC over Unix domain sockets.
+
+_A Redis-backed SharedMemory transport is planned for a future release._
 
 ------------------------------------------------------------------------
 
@@ -191,8 +191,17 @@ It provides runtime primitives, not a finished system.
 
 ## Status
 
-v1.0.1 adds:
+## Roadmap / Status
 
--   Unix socket transport coverage in the shared bus contract suite
+-   The next major feature will introduce a Redis-backed SharedMemory transport, enabling distributed shared state across nodes.
+-   MongoDB repository backend is implemented; formal tests in the contract suite will be finalized for 1.0.
+-   Existing transports: InMemory and RabbitMQ only.
+
+---
+
+### Recent changes
+
 -   Pre-start subscription contract alignment across transports
 -   Host lifecycle routing coverage across multiple transport types
+
+_(Legacy Unix socket transport has been dropped as niche and is no longer documented or maintained.)_

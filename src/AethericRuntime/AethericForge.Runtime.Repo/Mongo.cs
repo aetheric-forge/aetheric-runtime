@@ -2,15 +2,25 @@ namespace AethericForge.Runtime.Repo;
 
 using MongoDB.Driver;
 using Abstractions;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson;
 
 // Minimal MongoDB implementation of IRepo.
 public class MongoRepo<T> : IRepo<T> where T : IEntity
 {
     private readonly IMongoCollection<T> _col;
 
-    public MongoRepo(string mongoUri, string databaseName, string collectionName)
+    public MongoRepo(string mongoUri, string databaseName, string collectionName, bool directConnection = true)
     {
-        var db = new MongoClient(mongoUri).GetDatabase(databaseName);
+        var builder = new MongoUrlBuilder(mongoUri)
+        {
+            DirectConnection = directConnection,
+            AuthenticationSource = databaseName,
+            AuthenticationMechanism = "SCRAM-SHA-256"
+        };
+        var url = builder.ToMongoUrl();
+        var db = new MongoClient(url).GetDatabase(databaseName);
         _col = db.GetCollection<T>(collectionName);
     }
 

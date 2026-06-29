@@ -9,7 +9,7 @@ public sealed class MessageContext
     public IBroker Broker { get; }
     public CancellationToken CancellationToken { get; }
 
-    internal MessageContext(
+    private MessageContext(
         Envelope envelope,
         string serviceName,
         IBroker broker,
@@ -21,6 +21,25 @@ public sealed class MessageContext
         Broker = broker;
         _repos = repos;
         CancellationToken = cancellationToken;
+    }
+
+    public static MessageContext Create(
+        Envelope envelope,
+        string serviceName,
+        IBroker broker,
+        IReadOnlyDictionary<Type, object> repos,
+        CancellationToken cancellationToken)
+    {
+        if (envelope is null)
+            throw new ArgumentNullException(nameof(envelope));
+        if (serviceName is null)
+            throw new ArgumentNullException(nameof(serviceName));
+        if (broker is null)
+            throw new ArgumentNullException(nameof(broker));
+        if (repos is null)
+            throw new ArgumentNullException(nameof(repos));
+
+        return new MessageContext(envelope, serviceName, broker, repos, cancellationToken);
     }
 
     public TRepo GetRepo<TRepo>() where TRepo : class
