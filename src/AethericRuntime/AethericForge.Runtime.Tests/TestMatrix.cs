@@ -57,23 +57,12 @@ public static class TestMatrix
         var mongoUri = Environment.GetEnvironmentVariable("MONGO_URI");
         if (!string.IsNullOrWhiteSpace(mongoUri))
         {
-            // Try to find MongoRepo type via reflection to avoid compile issues if backend isn't present
-            var type = Type.GetType("AethericForge.Runtime.Repo.Backends.MongoRepo, AethericForge.Runtime.Repo");
-            if (type != null)
+            yield return new object[]
             {
-                var ctor = type.GetConstructor(new[] { typeof(string), typeof(string), typeof(string) });
-                if (ctor != null)
-                {
-                    yield return new object[]
-                    {
-                        () =>
-                        {
-                            // database/collection names defaulted as in app Program.cs
-                            return ctor.Invoke(new[] { mongoUri, "aetheric-runtime", "tests" });
-                        }
-                    };
-                }
-            }
+                (Func<IRepo<TestModels.TestMessage>>)(() =>
+                    MongoRepoFactory.Create<TestModels.TestMessage>(mongoUri, "forge", "tests", true)
+                )
+            };
         }
     }
 }
