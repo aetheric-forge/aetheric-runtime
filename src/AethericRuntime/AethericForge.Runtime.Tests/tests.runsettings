@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<RunSettings>
-  <RunConfiguration>
-    <EnvironmentVariables>
-      <RABBITMQ_URL>amqp://aetheric-tests:aetheric-tests@amqp-dev.int.aethericforge.ca:5672/forge-dev</RABBITMQ_URL>
-      <MONGO_URI>mongodb://aetheric-tests:aetheric-tests@forge-mongo-dev.int.aethericforge.ca:27017/aetheric-runtime</MONGO_URI>
-    </EnvironmentVariables>
-  </RunConfiguration>
-</RunSettings>
