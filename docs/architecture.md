@@ -18,7 +18,7 @@ production service scaffolding or external API gateway is included.
 
     +--------------------+        +------------------------------+        +----------------------+
     |  AethericHost      |  pub   |  ITransport                  |  route |  Consumers/Handlers  |
-    |  (composition)     +------->|  InMemory/RabbitMQ/UnixSock  +------->|  (in-process)         |
+    |  (composition)     +------->|  InMemory/RabbitMQ           +------->|  (in-process)         |
     +--------------------+        +------------------------------+        +----------------------+
               |
               | uses
@@ -27,6 +27,8 @@ production service scaffolding or external API gateway is included.
     |  IRepo<T>          |
     |  InMemory/MongoDB  |
     +--------------------+
+
+    # (Planned) SharedMemory (Redis) transport/repo to be added in 1.0+
 
 ## C# runtime library
 
@@ -39,7 +41,8 @@ production service scaffolding or external API gateway is included.
     -   Implements `MessageBroker`, which wraps a transport and provides
         routing helpers.
     -   Implements transports: `InMemoryTransport`,
-        `RabbitMqTransport`, and `UnixSocketTransport`.
+        `RabbitMqTransport`.
+    -   _(Future: SharedMemory/Redis transport on the roadmap)_
 -   `AethericForge.Runtime.Hosting`
     -   Implements `AethericHost` and `AethericHostBuilder`, plus
         handler interfaces and a message context.
@@ -108,16 +111,16 @@ The runtime provides a minimal host/composition layer.
 Transport contract tests run via a shared matrix:
 
 -   Always include `InMemoryTransport`.
--   Include `UnixSocketTransport` on non-Windows platforms.
 -   Include `RabbitMqTransport` when `RABBITMQ_URL` is set.
-
-Unix socket cases use unique temporary socket paths per test case to
-avoid collisions between runs.
+-   (Planned) Redis-backed "SharedMemory" transport in future test matrix runs where configuration is provided.
 
 Host lifecycle coverage validates that routes registered during
 `BuildAsync` are honored after `StartAsync` across transport types.
 
-## Known gaps
+## Known gaps & roadmap
 
 -   RabbitMQ provisioning beyond tests is not defined.
+-   MongoDB repository backend implemented, test coverage finalizing for 1.0.
+-   Redis-backed SharedMemory transport/repo is the next major addition.
 -   Production service scaffolding and deployment templates are not included.
+-   (Legacy Unix socket transport was dropped from codebase and docs.)
