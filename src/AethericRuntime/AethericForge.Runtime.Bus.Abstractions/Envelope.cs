@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AethericForge.Runtime.Bus.Abstractions;
 
@@ -10,6 +11,7 @@ public enum EnvelopeKind
     Error
 }
 
+[JsonConverter(typeof(EnvelopeJsonConverter))]
 public abstract class Envelope
 {
     public string QueueName =>
@@ -25,9 +27,9 @@ public abstract class Envelope
     public int Version { get; protected init; } = 1;
 
     public EnvelopeKind Kind { get; protected init; }
-    public RouteKey RouteKey { get; protected init; } = new(EnvelopeKind.Request, "");
+    public RouteKey RouteKey { get; protected init; } = default!;
 
-    public string Service { get; protected init; } = "";
+    public string Service { get; protected init; } = string.Empty;
     public string? Verb { get; protected init; }
     public string? Topic { get; protected init; }
 
@@ -91,14 +93,14 @@ public sealed class Envelope<T> : Envelope where T : notnull
         Payload = payload ?? throw new ArgumentNullException(nameof(payload));
         Kind = kind;
         RouteKey = routeKey ?? throw new ArgumentNullException(nameof(routeKey));
-        Id = Guid.NewGuid();
-        CorrelationId = Guid.NewGuid();
-        Meta = meta ?? new();
-        RouteKey = routeKey;
+        Service = routeKey.Service;
+        Verb = routeKey.Verb;
+        Topic = routeKey.Topic;
         Id = id ?? Guid.NewGuid();
         CorrelationId = correlationId;
-        CausationId = correlationId;
+        CausationId = causationId;
         Timestamp = timestamp ?? DateTimeOffset.UtcNow;
+        Meta = meta ?? new();
     }
 
     public override object UntypedPayload => Payload;

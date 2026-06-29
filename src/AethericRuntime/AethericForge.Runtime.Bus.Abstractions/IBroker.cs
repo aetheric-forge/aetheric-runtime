@@ -35,10 +35,10 @@ public class RouteKey
 
     public string QueueName => Kind switch
     {
-        EnvelopeKind.Request => $"{Service}.requests",
+        EnvelopeKind.Request => $"{Service}.{Verb}",
         EnvelopeKind.Response => $"{Service}.responses",
         EnvelopeKind.Error => $"{Service}.errors",
-        EnvelopeKind.Event => $"{Service}.events",
+        EnvelopeKind.Event => Topic ?? $"{Service}.events",
         _ => throw new InvalidOperationException("invalid EnvelopeKind"),
     };
 }

@@ -9,6 +9,8 @@ public sealed class AethericHostBuilder(string serviceName = "default")
     private readonly string _name = serviceName;
     private readonly List<ITransport> _transports = new();
     private readonly List<(Type payloadType, RouteKey routeKey, MessageHandler handler)> _handlers = new();
+    private readonly Dictionary<Type, Type> _commandHandlers = new();
+    private readonly Dictionary<Type, List<Type>> _eventHandlers = new();
     private readonly List<(RouteKey routeKey, EnvelopeHandler handler)> _routes = new();
     private readonly Dictionary<Type, object> _repos = new();
 
@@ -95,7 +97,7 @@ public sealed class AethericHostBuilder(string serviceName = "default")
         // Convert registered handler *types* into executable delegates.
         foreach (var transport in _transports)
         {
-            foreach (var (payloadType, handler) in _handlers)
+            foreach (var (payloadType, routingKey, handler) in _handlers)
             {
                 ct.ThrowIfCancellationRequested();
 
@@ -103,7 +105,7 @@ public sealed class AethericHostBuilder(string serviceName = "default")
                     routingKey,
                     async (envelope, ct) =>
                     {
-                        var ctx = new MessageContext(envelope, _name, broker, _repos, ct);
+                        var ctx = MessageContext.Create(envelope, _name, broker, _repos, ct);
                         if (!payloadType.IsInstanceOfType(envelope.UntypedPayload))
                             throw new InvalidOperationException(
                                 $"Envelope payload type mismatch. Expected {payloadType.Name}.");
@@ -146,10 +148,10 @@ public sealed class AethericHostBuilder(string serviceName = "default")
             ?? throw new InvalidOperationException(
                 $"{handlerType.FullName} does not implement IEventHandler<T>.");
 
-        if (!_eventHandlers.TryGetValue(eventType, out var list))
+        if (!_eventHandlers.TryGetValue(handlerType, out var list))
         {
             list = new List<Type>();
-            _eventHandlers[eventType] = list;
+            _eventHandlers[handlerType] = list;
         }
 
         list.Add(handlerType);
