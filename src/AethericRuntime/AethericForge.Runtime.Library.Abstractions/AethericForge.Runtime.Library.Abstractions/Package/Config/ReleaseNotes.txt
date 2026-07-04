@@ -1,3 +1,0 @@
-﻿0.0.1-prerelease (2026-07-02)
-
- - Project creation

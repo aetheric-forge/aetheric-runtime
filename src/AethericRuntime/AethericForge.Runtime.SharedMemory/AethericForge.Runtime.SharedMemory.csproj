@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="../AethericForge.Runtime.SharedMemory.Abstractions/AethericForge.Runtime.SharedMemory.Abstractions.csproj" />
+    <ProjectReference Include="../../Abstractions/AethericForge.Runtime.SharedMemory.Abstractions/AethericForge.Runtime.SharedMemory.Abstractions.csproj" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.123" />
   </ItemGroup>
 

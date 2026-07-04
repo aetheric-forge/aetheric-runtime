@@ -9,11 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Abstractions\AethericForge.Runtime.Bus.Abstractions\AethericForge.Runtime.Bus.Abstractions.csproj" />
-    <ProjectReference Include="..\..\AethericForge.Runtime.Util\AethericForge.Runtime.Util.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="RabbitMQ.Client" Version="7.2.0" />
   </ItemGroup>
 
 </Project>

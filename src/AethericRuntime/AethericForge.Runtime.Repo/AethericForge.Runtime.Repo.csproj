@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\AethericForge.Runtime.Util\AethericForge.Runtime.Util.csproj" />
-    <ProjectReference Include="..\AethericForge.Runtime.Repo.Abstractions\AethericForge.Runtime.Repo.Abstractions.csproj" />
+    <ProjectReference Include="..\..\AethericForge.Runtime.Util\AethericForge.Runtime.Util.csproj" />
+    <ProjectReference Include="..\..\Abstractions\AethericForge.Runtime.Repo.Abstractions\AethericForge.Runtime.Repo.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>
