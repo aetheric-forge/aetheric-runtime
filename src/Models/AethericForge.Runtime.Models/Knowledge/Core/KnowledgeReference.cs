@@ -2,15 +2,14 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Core;
 
-namespace AethericForge.Runtime.Abstractions.Models.Knowledge.Core;
+namespace AethericForge.Runtime.Models.Knowledge.Core;
 
-public sealed record KnowledgeMetadata : IKnowledgeMetadata, IComparable<KnowledgeMetadata>
+public sealed record KnowledgeReference : IKnowledgeReference, IComparable<KnowledgeReference>
 {
     private const int MaxSetLength = 128;
     private const int MaxKindLength = 64;
     private const int MaxNameLength = 256;
     private const int MaxVersionLength = 64;
-    private const int MaxDescriptionLength = 1024;
 
     private static readonly Regex SlugPattern =
         new("^[a-z0-9][a-z0-9._-]*[a-z0-9]$|^[a-z0-9]$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -24,52 +23,29 @@ public sealed record KnowledgeMetadata : IKnowledgeMetadata, IComparable<Knowled
         new("^[a-f0-9]{64}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     [JsonConstructor]
-    public KnowledgeMetadata(
+    public KnowledgeReference(
         string set,
         string kind,
         string name,
         string version,
         int revision,
-        string? description,
-        string? contentHash,
-        DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc)
+        string? contentHash)
     {
         Set = ValidateSlug(set, nameof(set), MaxSetLength);
         Kind = ValidateSlug(kind, nameof(kind), MaxKindLength);
         Name = ValidateSlug(name, nameof(name), MaxNameLength);
         Version = ValidateVersion(version);
         Revision = ValidateRevision(revision);
-        Description = NormalizeDescription(description);
         ContentHash = NormalizeContentHash(contentHash);
-        CreatedAtUtc = createdAtUtc.ToUniversalTime();
-        UpdatedAtUtc = updatedAtUtc.ToUniversalTime();
-
-        if (UpdatedAtUtc < CreatedAtUtc)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(updatedAtUtc),
-                updatedAtUtc,
-                "UpdatedAtUtc must be greater than or equal to CreatedAtUtc.");
-        }
     }
 
-    public KnowledgeMetadata(
+    public KnowledgeReference(
         string set,
         string kind,
         string name,
         string version,
         int revision)
-        : this(
-            set,
-            kind,
-            name,
-            version,
-            revision,
-            description: null,
-            contentHash: null,
-            createdAtUtc: DateTimeOffset.UtcNow,
-            updatedAtUtc: DateTimeOffset.UtcNow)
+        : this(set, kind, name, version, revision, contentHash: null)
     {
     }
 
@@ -78,12 +54,9 @@ public sealed record KnowledgeMetadata : IKnowledgeMetadata, IComparable<Knowled
     public string Name { get; }
     public string Version { get; }
     public int Revision { get; }
-    public string? Description { get; }
     public string? ContentHash { get; }
-    public DateTimeOffset CreatedAtUtc { get; }
-    public DateTimeOffset UpdatedAtUtc { get; }
 
-    public int CompareTo(KnowledgeMetadata? other)
+    public int CompareTo(KnowledgeReference? other)
     {
         if (other is null)
         {
@@ -182,26 +155,6 @@ public sealed record KnowledgeMetadata : IKnowledgeMetadata, IComparable<Knowled
         return revision;
     }
 
-    private static string? NormalizeDescription(string? description)
-    {
-        if (string.IsNullOrWhiteSpace(description))
-        {
-            return null;
-        }
-
-        var normalized = description.Trim();
-
-        if (normalized.Length > MaxDescriptionLength)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(description),
-                normalized,
-                $"Description must be {MaxDescriptionLength} characters or fewer.");
-        }
-
-        return normalized;
-    }
-
     private static string? NormalizeContentHash(string? contentHash)
     {
         if (string.IsNullOrWhiteSpace(contentHash))
@@ -221,61 +174,9 @@ public sealed record KnowledgeMetadata : IKnowledgeMetadata, IComparable<Knowled
 
     private static int CompareVersions(string left, string right)
     {
-        var leftMatch = SemVerPattern.Match(left);
-        var rightMatch = SemVerPattern.Match(right);
+        var leftVersion = global::System.Version.Parse(left.Split('-', '+')[0]);
+        var rightVersion = global::System.Version.Parse(right.Split('-', '+')[0]);
 
-        for (var i = 1; i <= 3; i++)
-        {
-            var result = int.Parse(leftMatch.Groups[i].Value).CompareTo(int.Parse(rightMatch.Groups[i].Value));
-            if (result != 0)
-            {
-                return result;
-            }
-        }
-
-        return ComparePreRelease(leftMatch.Groups[4].Value, rightMatch.Groups[4].Value);
-    }
-
-    private static int ComparePreRelease(string left, string right)
-    {
-        if (left.Length == 0 && right.Length == 0)
-        {
-            return 0;
-        }
-
-        if (left.Length == 0)
-        {
-            return 1;
-        }
-
-        if (right.Length == 0)
-        {
-            return -1;
-        }
-
-        var leftParts = left.Split('.');
-        var rightParts = right.Split('.');
-        var count = Math.Min(leftParts.Length, rightParts.Length);
-
-        for (var i = 0; i < count; i++)
-        {
-            var leftNumeric = int.TryParse(leftParts[i], out var leftNumber);
-            var rightNumeric = int.TryParse(rightParts[i], out var rightNumber);
-
-            var result = (leftNumeric, rightNumeric) switch
-            {
-                (true, true) => leftNumber.CompareTo(rightNumber),
-                (true, false) => -1,
-                (false, true) => 1,
-                _ => StringComparer.Ordinal.Compare(leftParts[i], rightParts[i])
-            };
-
-            if (result != 0)
-            {
-                return result;
-            }
-        }
-
-        return leftParts.Length.CompareTo(rightParts.Length);
+        return leftVersion.CompareTo(rightVersion);
     }
 }
