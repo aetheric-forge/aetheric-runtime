@@ -221,3 +221,6 @@ bin/
 qodana.yaml
 *.DotSettings.user
 
+.codex/
+.agents/
+

@@ -41,6 +41,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Specifications", "Specifica
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Institutions.Registrar", "Institutions\AethericForge.Runtime.Institutions.Registrar\AethericForge.Runtime.Institutions.Registrar.csproj", "{96CDC6F9-51D6-4441-A8DE-B84CED246626}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Providers", "Providers", "{EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Storage", "Storage", "{A966C50C-C14E-4038-BE1B-EB8634D24877}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Providers.Storage.S3", "Providers\AethericForge.Runtime.Providers.Storage.S3\AethericForge.Runtime.Providers.Storage.S3.csproj", "{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Services.Storage", "Services\AethericForge.Runtime.Services.Storage\AethericForge.Runtime.Services.Storage.csproj", "{B313457C-B5E5-4B50-B834-43CACFB06817}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -123,6 +131,30 @@ Global
 		{96CDC6F9-51D6-4441-A8DE-B84CED246626}.Release|x64.Build.0 = Release|Any CPU
 		{96CDC6F9-51D6-4441-A8DE-B84CED246626}.Release|x86.ActiveCfg = Release|Any CPU
 		{96CDC6F9-51D6-4441-A8DE-B84CED246626}.Release|x86.Build.0 = Release|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Debug|x64.Build.0 = Debug|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Debug|x86.Build.0 = Debug|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Release|x64.ActiveCfg = Release|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Release|x64.Build.0 = Release|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Release|x86.ActiveCfg = Release|Any CPU
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE}.Release|x86.Build.0 = Release|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Debug|x64.Build.0 = Debug|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Debug|x86.Build.0 = Debug|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Release|x64.ActiveCfg = Release|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Release|x64.Build.0 = Release|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Release|x86.ActiveCfg = Release|Any CPU
+		{B313457C-B5E5-4B50-B834-43CACFB06817}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -135,5 +167,8 @@ Global
 		{4D919247-AAAC-48A0-9D28-4AC474900903} = {756F3283-9BC3-4D8B-A0B6-5DA2693CEF92}
 		{16AE0D59-AE43-43BD-8065-D7DE4AFF7CFD} = {3A0D0869-E172-4117-999E-726CCECA4370}
 		{96CDC6F9-51D6-4441-A8DE-B84CED246626} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
+		{A966C50C-C14E-4038-BE1B-EB8634D24877} = {EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}
+		{FE6731EA-4160-4FE1-B88A-E06EAFAB9DCE} = {A966C50C-C14E-4038-BE1B-EB8634D24877}
+		{B313457C-B5E5-4B50-B834-43CACFB06817} = {40546DA9-AF05-432D-929C-49D44BD67639}
 	EndGlobalSection
 EndGlobal
