@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Library\AethericForge.Runtime.Institutions.Library.csproj" />
     <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Registrar\AethericForge.Runtime.Institutions.Registrar.csproj" />
     <ProjectReference Include="..\..\Models\AethericForge.Runtime.Models\AethericForge.Runtime.Models.csproj" />
+    <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Storage.MongoDb\AethericForge.Runtime.Providers.Storage.MongoDb.csproj" />
     <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Storage\AethericForge.Runtime.Services.Storage.csproj" />
   </ItemGroup>
   <ItemGroup>

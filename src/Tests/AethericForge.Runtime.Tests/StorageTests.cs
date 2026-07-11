@@ -2,6 +2,7 @@ using System.Text;
 using AethericForge.Runtime.Abstractions.Interfaces.Storage;
 using AethericForge.Runtime.Abstractions.Interfaces.Storage.Providers;
 using AethericForge.Runtime.Models.Storage;
+using AethericForge.Runtime.Providers.Storage.MongoDb;
 using AethericForge.Runtime.Services.Storage;
 
 namespace AethericForge.Runtime.Tests;
@@ -64,6 +65,19 @@ public class StorageTests
         Assert.Equal("abc", metadata.ETag);
         Assert.Equal(TimeSpan.Zero, metadata.LastModifiedUtc?.Offset);
         Assert.Equal("runtime", metadata.Attributes["owner"]);
+    }
+
+    [Fact]
+    public async Task MongoDbStorageProvider_Rejects_References_For_Other_Stores()
+    {
+        var provider = new MongoDbStorageProvider(
+            "mongodb://localhost:27017",
+            "forge",
+            "storage",
+            "primary");
+        var reference = new StorageReference("archive", "notes/one.txt");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => provider.ExistsAsync(reference));
     }
 
     private static MemoryStream CreateStream(string value)
