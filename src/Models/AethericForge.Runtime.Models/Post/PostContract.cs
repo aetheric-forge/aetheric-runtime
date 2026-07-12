@@ -1,0 +1,30 @@
+using AethericForge.Runtime.Abstractions.Interfaces.Post;
+
+namespace AethericForge.Runtime.Models.Post;
+
+public sealed record PostContract : IPostContract
+{
+    public PostContract(
+        string name,
+        string version,
+        PostIntent intent)
+    {
+        Name = NormalizeRequired(name, nameof(name));
+        Version = NormalizeRequired(version, nameof(version));
+        Intent = intent;
+    }
+
+    public string Name { get; }
+    public string Version { get; }
+    public PostIntent Intent { get; }
+
+    private static string NormalizeRequired(string value, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException("Value is required.", parameterName);
+        }
+
+        return value.Trim();
+    }
+}
