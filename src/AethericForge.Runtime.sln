@@ -58,6 +58,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Post", "Post", "{67BFE618-E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Providers.Post.InMemory", "Providers\AethericForge.Runtime.Providers.Post.InMemory\AethericForge.Runtime.Providers.Post.InMemory.csproj", "{919FE956-C6C6-4188-B470-6982882B6EDB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Providers.Post.RabbitMq", "Providers\AethericForge.Runtime.Providers.Post.RabbitMq\AethericForge.Runtime.Providers.Post.RabbitMq.csproj", "{8A372A72-9C67-4B90-9595-3688798CC48E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Abstractions", "Abstractions", "{67BFE618-E232-7DE5-34A1-02EE902F7C19}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Interfaces", "Interfaces", "{8BBE426F-E04E-9824-64CC-97DE89D6CB39}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Providers.Post.RabbitMq.Tests", "Tests\AethericForge.Runtime.Providers.Post.RabbitMq.Tests\AethericForge.Runtime.Providers.Post.RabbitMq.Tests.csproj", "{EA608594-098B-4D75-98E6-0C545880408C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -200,6 +208,30 @@ Global
 		{919FE956-C6C6-4188-B470-6982882B6EDB}.Release|x64.Build.0 = Release|Any CPU
 		{919FE956-C6C6-4188-B470-6982882B6EDB}.Release|x86.ActiveCfg = Release|Any CPU
 		{919FE956-C6C6-4188-B470-6982882B6EDB}.Release|x86.Build.0 = Release|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Debug|x64.Build.0 = Debug|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Debug|x86.Build.0 = Debug|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Release|x64.ActiveCfg = Release|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Release|x64.Build.0 = Release|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Release|x86.ActiveCfg = Release|Any CPU
+		{8A372A72-9C67-4B90-9595-3688798CC48E}.Release|x86.Build.0 = Release|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Debug|x64.Build.0 = Debug|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Debug|x86.Build.0 = Debug|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Release|x64.ActiveCfg = Release|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Release|x64.Build.0 = Release|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Release|x86.ActiveCfg = Release|Any CPU
+		{EA608594-098B-4D75-98E6-0C545880408C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -219,5 +251,8 @@ Global
 		{F789C9EE-6286-4E79-8B73-957C7A27001B} = {40546DA9-AF05-432D-929C-49D44BD67639}
 		{67BFE618-E232-7DE5-34A1-02EE902F7C19} = {EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}
 		{919FE956-C6C6-4188-B470-6982882B6EDB} = {67BFE618-E232-7DE5-34A1-02EE902F7C19}
+		{8BBE426F-E04E-9824-64CC-97DE89D6CB39} = {67BFE618-E232-7DE5-34A1-02EE902F7C19}
+		{EA608594-098B-4D75-98E6-0C545880408C} = {AD4CDE37-D154-4F43-8EF2-999176F24C08}
+		{8A372A72-9C67-4B90-9595-3688798CC48E} = {67BFE618-E232-7DE5-34A1-02EE902F7C19}
 	EndGlobalSection
 EndGlobal
