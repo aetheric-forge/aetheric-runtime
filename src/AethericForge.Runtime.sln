@@ -37,6 +37,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Specifications", "Specifica
 		..\docs\Specifications\Institution.md = ..\docs\Specifications\Institution.md
 		..\docs\Specifications\Knowledge.md = ..\docs\Specifications\Knowledge.md
 		..\docs\Specifications\Preamble.md = ..\docs\Specifications\Preamble.md
+		..\docs\Specifications\Post.md = ..\docs\Specifications\Post.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Institutions.Registrar", "Institutions\AethericForge.Runtime.Institutions.Registrar\AethericForge.Runtime.Institutions.Registrar.csproj", "{96CDC6F9-51D6-4441-A8DE-B84CED246626}"
