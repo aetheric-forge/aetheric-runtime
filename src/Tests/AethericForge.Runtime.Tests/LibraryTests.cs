@@ -1,7 +1,7 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Institutions.Library;
-using AethericForge.Runtime.Models.Knowledge.Core;
-using AethericForge.Runtime.Models.Storage;
+using AethericForge.Runtime.Models.Archive;
+using AethericForge.Runtime.Models.Knowledge.Primitives;
 
 namespace AethericForge.Runtime.Tests;
 
@@ -24,20 +24,20 @@ public class LibraryTests
     {
         var shelf = new Shelf("reference");
         var knowledgeObject = CreateKnowledgeObject();
-        var storageReference = new StorageReference("memory", "reference/article-one");
+        var archiveReference = new ArchiveReference("memory", "reference/article-one");
 
-        var placement = await shelf.PlaceAsync(knowledgeObject, storageReference);
+        var placement = await shelf.PlaceAsync(knowledgeObject, archiveReference);
 
         Assert.Equal("reference", placement.ShelfName);
         Assert.Same(knowledgeObject.Reference, placement.KnowledgeReference);
-        Assert.Same(storageReference, placement.StorageReference);
+        Assert.Same(archiveReference, placement.ArchiveReference);
         Assert.True(await shelf.ExistsAsync(knowledgeObject.Reference));
 
         var located = await shelf.LocateAsync(knowledgeObject.Reference);
         Assert.NotNull(located);
         Assert.Equal("reference", located.ShelfName);
         Assert.Same(knowledgeObject.Reference, located.KnowledgeReference);
-        Assert.Same(storageReference, located.StorageReference);
+        Assert.Same(archiveReference, located.ArchiveReference);
 
         var retrieved = await shelf.GetAsync(knowledgeObject.Reference);
         Assert.Same(knowledgeObject, retrieved);

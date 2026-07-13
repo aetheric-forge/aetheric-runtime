@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Services;
-using AethericForge.Runtime.Models.Identity.Core;
+using AethericForge.Runtime.Models.Identity.Primitives;
 
 namespace AethericForge.Runtime.Institutions.Registrar;
 

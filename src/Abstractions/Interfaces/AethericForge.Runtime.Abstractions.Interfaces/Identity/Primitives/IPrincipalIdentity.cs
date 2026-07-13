@@ -1,9 +1,7 @@
 namespace AethericForge.Runtime.Abstractions.Interfaces.Identity.Primitives;
 
-public interface IPrincipalIdentity
+public interface IPrincipalIdentity : IIdentitySubject
 {
     IIdentitySubject Subject { get; }
-    IdentityScheme Scheme { get; }
     bool IsAuthenticated { get; }
-    IReadOnlyCollection<IIdentityClaim> Claims { get; }
 }

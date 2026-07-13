@@ -1,6 +1,5 @@
+using AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
-using AethericForge.Runtime.Abstractions.Interfaces.Storage;
-using AethericForge.Runtime.Abstractions.Interfaces.Storage.Primitives;
 
 namespace AethericForge.Runtime.Institutions.Library;
 
@@ -11,7 +10,7 @@ public sealed class Shelf
             name,
             new MemoryStore<string, IKnowledgeObject>(),
             new MemoryStore<string, IKnowledgeReference>(),
-            new MemoryStore<string, IStorageReference>())
+            new MemoryStore<string, IArchiveReference>())
     {
     }
 
@@ -19,34 +18,34 @@ public sealed class Shelf
         string name,
         IStore<string, IKnowledgeObject> store,
         IStore<string, IKnowledgeReference> knowledgeReferences,
-        IStore<string, IStorageReference> storageReferences)
+        IStore<string, IArchiveReference> archiveReferences)
     {
         Name = NormalizeName(name);
         Store = store ?? throw new ArgumentNullException(nameof(store));
         KnowledgeReferences = knowledgeReferences ?? throw new ArgumentNullException(nameof(knowledgeReferences));
-        StorageReferences = storageReferences ?? throw new ArgumentNullException(nameof(storageReferences));
+        ArchiveReferences = archiveReferences ?? throw new ArgumentNullException(nameof(archiveReferences));
     }
 
     public string Name { get; }
     public IStore<string, IKnowledgeObject> Store { get; }
     public IStore<string, IKnowledgeReference> KnowledgeReferences { get; }
-    public IStore<string, IStorageReference> StorageReferences { get; }
+    public IStore<string, IArchiveReference> ArchiveReferences { get; }
 
     public async Task<ShelfLocation> PlaceAsync(
         IKnowledgeObject knowledgeObject,
-        IStorageReference storageReference,
+        IArchiveReference archiveReference,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(knowledgeObject);
-        ArgumentNullException.ThrowIfNull(storageReference);
+        ArgumentNullException.ThrowIfNull(archiveReference);
 
         var key = CreateKey(knowledgeObject.Reference);
 
         await Store.SetAsync(key, knowledgeObject, ct);
         await KnowledgeReferences.SetAsync(key, knowledgeObject.Reference, ct);
-        await StorageReferences.SetAsync(key, storageReference, ct);
+        await ArchiveReferences.SetAsync(key, archiveReference, ct);
 
-        return new ShelfLocation(Name, knowledgeObject.Reference, storageReference);
+        return new ShelfLocation(Name, knowledgeObject.Reference, archiveReference);
     }
 
     public async Task<IKnowledgeObject?> GetAsync(IKnowledgeReference knowledgeReference, CancellationToken ct = default)
@@ -67,11 +66,11 @@ public sealed class Shelf
 
         var key = CreateKey(knowledgeReference);
         var storedReference = await KnowledgeReferences.GetAsync(key, ct);
-        var storageReference = await StorageReferences.GetAsync(key, ct);
+        var archiveReference = await ArchiveReferences.GetAsync(key, ct);
 
-        return storedReference is null || storageReference is null
+        return storedReference is null || archiveReference is null
             ? null
-            : new ShelfLocation(Name, storedReference, storageReference);
+            : new ShelfLocation(Name, storedReference, archiveReference);
     }
 
     public async Task<bool> RemoveAsync(IKnowledgeReference knowledgeReference, CancellationToken ct = default)
@@ -81,9 +80,9 @@ public sealed class Shelf
         var key = CreateKey(knowledgeReference);
         var removedObject = await Store.RemoveAsync(key, ct);
         var removedKnowledgeReference = await KnowledgeReferences.RemoveAsync(key, ct);
-        var removedStorageReference = await StorageReferences.RemoveAsync(key, ct);
+        var removedArchiveReference = await ArchiveReferences.RemoveAsync(key, ct);
 
-        return removedObject || removedKnowledgeReference || removedStorageReference;
+        return removedObject || removedKnowledgeReference || removedArchiveReference;
     }
 
     private static string CreateKey(IKnowledgeReference reference)
