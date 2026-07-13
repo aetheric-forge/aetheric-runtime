@@ -1,5 +1,6 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Post;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Consumers;
+using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Providers;
 using AethericForge.Runtime.Models.Post;
 

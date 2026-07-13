@@ -1,4 +1,4 @@
-using AethericForge.Runtime.Abstractions.Interfaces.Identity.Core;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Primitives;
 
 namespace AethericForge.Runtime.Models.Identity.Core;
 

@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Core;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 
 namespace AethericForge.Runtime.Models.Knowledge.Core;
 

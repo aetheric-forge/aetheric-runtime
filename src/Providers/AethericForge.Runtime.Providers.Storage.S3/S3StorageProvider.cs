@@ -2,6 +2,7 @@ using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
 using AethericForge.Runtime.Abstractions.Interfaces.Storage;
+using AethericForge.Runtime.Abstractions.Interfaces.Storage.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Storage.Providers;
 using AethericForge.Runtime.Models.Storage;
 

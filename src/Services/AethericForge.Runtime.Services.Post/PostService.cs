@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AethericForge.Runtime.Abstractions.Interfaces.Post;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Consumers;
+using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Providers;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Services;
 using AethericForge.Runtime.Models.Post;

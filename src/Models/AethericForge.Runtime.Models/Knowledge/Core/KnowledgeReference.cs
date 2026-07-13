@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Core;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 
 namespace AethericForge.Runtime.Models.Knowledge.Core;
 

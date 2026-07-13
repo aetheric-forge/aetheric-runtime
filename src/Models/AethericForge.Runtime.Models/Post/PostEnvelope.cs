@@ -1,4 +1,5 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Post;
+using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
 
 namespace AethericForge.Runtime.Models.Post;
 

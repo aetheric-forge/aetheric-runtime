@@ -1,5 +1,6 @@
-using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Core;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Storage;
+using AethericForge.Runtime.Abstractions.Interfaces.Storage.Primitives;
 
 namespace AethericForge.Runtime.Institutions.Library;
 

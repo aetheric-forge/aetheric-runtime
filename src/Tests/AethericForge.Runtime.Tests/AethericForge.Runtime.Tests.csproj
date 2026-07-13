@@ -27,17 +27,10 @@
     <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Post.InMemory\AethericForge.Runtime.Providers.Post.InMemory.csproj" />
     <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Storage.MongoDb\AethericForge.Runtime.Providers.Storage.MongoDb.csproj" />
     <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Post\AethericForge.Runtime.Services.Post.csproj" />
+    <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Staging\AethericForge.Runtime.Services.Staging.csproj" />
     <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Storage\AethericForge.Runtime.Services.Storage.csproj" />
+    <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Staging.Redis\AethericForge.Runtime.Providers.Staging.Redis.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Remove="BusTests.cs" />
-    <Compile Remove="CampusTests.cs" />
-    <Compile Remove="HostTests.cs" />
-    <Compile Remove="HostingTests.cs" />
-    <Compile Remove="RepoTests.cs" />
-    <Compile Remove="SharedMemoryMatrix.cs" />
-    <Compile Remove="SharedMemoryTests.cs" />
-    <Compile Remove="TestMatrix.cs" />
-    <Compile Remove="TestModels.cs" />
   </ItemGroup>
 </Project>

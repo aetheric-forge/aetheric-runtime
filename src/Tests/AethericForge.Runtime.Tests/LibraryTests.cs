@@ -1,4 +1,4 @@
-using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Core;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Institutions.Library;
 using AethericForge.Runtime.Models.Knowledge.Core;
 using AethericForge.Runtime.Models.Storage;

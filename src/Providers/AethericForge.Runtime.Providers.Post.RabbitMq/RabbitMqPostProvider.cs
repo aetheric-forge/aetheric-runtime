@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using AethericForge.Runtime.Abstractions.Interfaces.Post;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Consumers;
+using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Providers;
 using AethericForge.Runtime.Models.Post;
 using RabbitMQ.Client;
