@@ -1,17 +1,30 @@
-using AethericForge.Runtime.Abstractions.Interfaces.Identity.Primitives;
-using AethericForge.Runtime.Abstractions.Interfaces.Identity.Services;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Authentication;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Claims;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Lifecycle;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Provisioning;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 using AethericForge.Runtime.Models.Identity.Primitives;
 using AethericForge.Runtime.Services.Identity;
+using AethericForge.Runtime.Services.Identity.Lifecycle;
 using Xunit;
 
 namespace AethericForge.Runtime.Tests;
 
 public class IdentityServiceTests
 {
+    private readonly IIdentityLifecycleService _lifecycleService = new IdentityLifecycleService(Enumerable.Empty<IIdentityLifecyclePolicy>());
+
     [Fact]
     public void Constructor_Throws_When_Providers_Is_Null()
     {
-        Assert.Throws<ArgumentNullException>(() => new IdentityService(null!));
+        Assert.Throws<ArgumentNullException>(() => new IdentityService(null!, _lifecycleService));
+    }
+
+    [Fact]
+    public void Constructor_Throws_When_LifecycleService_Is_Null()
+    {
+        Assert.Throws<ArgumentNullException>(() => new IdentityService(Enumerable.Empty<IIdentityProvider>(), null!));
     }
 
     [Fact]
@@ -23,7 +36,7 @@ public class IdentityServiceTests
         var principal = new PrincipalIdentity(new IdentitySubject("id", scheme), true);
         
         var provider = new StubIdentityProvider(scheme, principal: principal);
-        var service = new IdentityService(new[] { provider });
+        var service = new IdentityService(new[] { provider }, _lifecycleService);
 
         // Act
         var result = await service.AuthenticateAsync(scheme, credentials);
@@ -37,7 +50,7 @@ public class IdentityServiceTests
     public async Task AuthenticateAsync_Throws_When_Scheme_Not_Found()
     {
         // Arrange
-        var service = new IdentityService(Enumerable.Empty<IIdentityProvider>());
+        var service = new IdentityService(Enumerable.Empty<IIdentityProvider>(), _lifecycleService);
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => 
@@ -53,7 +66,7 @@ public class IdentityServiceTests
         var subject = new IdentitySubject(subjectId, scheme);
         
         var provider = new StubIdentityProvider(scheme, subject: subject);
-        var service = new IdentityService(new[] { provider });
+        var service = new IdentityService(new[] { provider }, _lifecycleService);
 
         // Act
         var result = await service.ResolveSubjectAsync(scheme, subjectId);
@@ -72,7 +85,7 @@ public class IdentityServiceTests
         var principal = new StubPrincipalAndSubject("id", scheme);
         
         var provider = new StubIdentityProvider(scheme, subject: principal);
-        var service = new IdentityService(new[] { provider });
+        var service = new IdentityService(new[] { provider }, _lifecycleService);
 
         // Act
         var result = await service.ResolvePrincipalAsync(subject);
@@ -92,7 +105,7 @@ public class IdentityServiceTests
         var principal = new PrincipalIdentity(resolvedSubject, true);
         
         var provider = new StubIdentityProvider(scheme, subject: resolvedSubject, principal: principal);
-        var service = new IdentityService(new[] { provider });
+        var service = new IdentityService(new[] { provider }, _lifecycleService);
 
         // Act
         var result = await service.ResolvePrincipalAsync(subject);
@@ -111,7 +124,7 @@ public class IdentityServiceTests
         var subject = new IdentitySubject("id", scheme);
         
         var provider = new StubIdentityProvider(scheme);
-        var service = new IdentityService(new[] { provider });
+        var service = new IdentityService(new[] { provider }, _lifecycleService);
 
         // Act
         var result = await service.ResolvePrincipalAsync(subject);

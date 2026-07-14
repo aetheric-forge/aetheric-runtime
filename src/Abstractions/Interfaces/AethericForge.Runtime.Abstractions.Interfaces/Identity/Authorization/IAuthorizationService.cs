@@ -1,4 +1,4 @@
-using AethericForge.Runtime.Abstractions.Interfaces.Identity.Primitives;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
 
 namespace AethericForge.Runtime.Abstractions.Interfaces.Identity.Authorization;
 

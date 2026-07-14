@@ -18,6 +18,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Moq" Version="4.18.4" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Abstractions\Interfaces\AethericForge.Runtime.Abstractions.Interfaces\AethericForge.Runtime.Abstractions.Interfaces.csproj" />
@@ -32,6 +33,7 @@
     <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Staging.Redis\AethericForge.Runtime.Providers.Staging.Redis.csproj" />
     <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Identity.Keycloak\AethericForge.Runtime.Providers.Identity.Keycloak.csproj" />
     <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Identity\AethericForge.Runtime.Services.Identity.csproj" />
+    <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Knowledge\AethericForge.Runtime.Services.Knowledge.csproj" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

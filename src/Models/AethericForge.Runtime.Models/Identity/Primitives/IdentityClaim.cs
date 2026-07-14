@@ -1,8 +1,8 @@
-using AethericForge.Runtime.Abstractions.Interfaces.Identity.Primitives;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Claims;
 
 namespace AethericForge.Runtime.Models.Identity.Primitives;
 
-public sealed record IdentityClaim : IIdentityClaim
+public record IdentityClaim : IIdentityClaim
 {
     private const int MaxTypeLength = 128;
     private const int MaxValueLength = 2048;

@@ -1,0 +1,38 @@
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.References;
+
+namespace AethericForge.Runtime.Models.Knowledge.References;
+
+public sealed record AuthoritativeReference : IAuthoritativeReference
+{
+    public AuthoritativeReference(
+        string set,
+        string kind,
+        string name,
+        string version,
+        IKnowledgeAuthority authority,
+        string role,
+        int revision = 0,
+        string? contentHash = null)
+    {
+        Set = set ?? throw new ArgumentNullException(nameof(set));
+        Kind = kind ?? throw new ArgumentNullException(nameof(kind));
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+        Version = version ?? throw new ArgumentNullException(nameof(version));
+        Authority = authority ?? throw new ArgumentNullException(nameof(authority));
+        Role = role ?? throw new ArgumentNullException(nameof(role));
+        Revision = revision;
+        ContentHash = contentHash;
+    }
+
+    public string Set { get; init; }
+    public string Kind { get; init; }
+    public string Name { get; init; }
+    public string Version { get; init; }
+    public int Revision { get; init; }
+    public string? ContentHash { get; init; }
+    public IKnowledgeAuthority Authority { get; init; }
+    public string Role { get; init; }
+
+    public override string ToString() => $"{Authority.Identity.SubjectId}@{Set}:{Kind}/{Name}#{Role}";
+}

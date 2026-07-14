@@ -1,4 +1,6 @@
-using AethericForge.Runtime.Abstractions.Interfaces.Identity.Primitives;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Authentication;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 using AethericForge.Runtime.Abstractions.Interfaces.Institutions;
 
 namespace AethericForge.Runtime.Institutions.Registrar;

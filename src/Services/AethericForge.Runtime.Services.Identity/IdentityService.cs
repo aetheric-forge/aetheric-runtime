@@ -1,17 +1,25 @@
-using AethericForge.Runtime.Abstractions.Interfaces.Identity.Primitives;
-using AethericForge.Runtime.Abstractions.Interfaces.Identity.Services;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Authentication;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Lifecycle;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Provisioning;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 
 namespace AethericForge.Runtime.Services.Identity;
 
-public sealed class IdentityService : IIdentityService
+public sealed class IdentityService : IIdentityService, IAuthenticationService, IIdentityResolver, IIdentityLifecycleService
 {
     private readonly IReadOnlyDictionary<IdentityScheme, IIdentityProvider> _providers;
+    private readonly IIdentityLifecycleService _lifecycleService;
 
-    public IdentityService(IEnumerable<IIdentityProvider> providers)
+    public IdentityService(
+        IEnumerable<IIdentityProvider> providers,
+        IIdentityLifecycleService lifecycleService)
     {
         ArgumentNullException.ThrowIfNull(providers);
+        ArgumentNullException.ThrowIfNull(lifecycleService);
 
         _providers = providers.ToDictionary(p => p.Scheme);
+        _lifecycleService = lifecycleService;
     }
 
     public Task<IPrincipalIdentity?> AuthenticateAsync(
@@ -38,13 +46,22 @@ public sealed class IdentityService : IIdentityService
 
         var provider = GetProvider(subject.Scheme);
         
-        // This is a bit simplified, usually you'd want to verify the subject still exists or refresh claims
         return await provider.ResolveSubjectAsync(subject.SubjectId, cancellationToken) switch
         {
             IPrincipalIdentity principal => principal,
             IIdentitySubject resolvedSubject => await provider.AuthenticateAsync(new Dictionary<string, string> { ["subjectId"] = resolvedSubject.SubjectId }, cancellationToken),
             _ => null
         };
+    }
+
+    public Task<IIdentityLifecycle> GetLifecycleAsync(IIdentitySubject subject, CancellationToken cancellationToken = default)
+    {
+        return _lifecycleService.GetLifecycleAsync(subject, cancellationToken);
+    }
+
+    public Task TransitionAsync(IIdentitySubject subject, IdentityState newState, string? reason = null, CancellationToken cancellationToken = default)
+    {
+        return _lifecycleService.TransitionAsync(subject, newState, reason, cancellationToken);
     }
 
     private IIdentityProvider GetProvider(IdentityScheme scheme)
