@@ -13,7 +13,7 @@ public class RabbitMqPostProviderTests
     private readonly Mock<IConnection> _mockConnection;
     private readonly Mock<IChannel> _mockChannel;
     private readonly RabbitMqPostProvider _provider;
-    private const string ProviderName = "test-provider";
+    private const string DomainName = "test-domain";
 
     public RabbitMqPostProviderTests()
     {
@@ -26,13 +26,13 @@ public class RabbitMqPostProviderTests
         _mockConnection.Setup(x => x.CreateChannelAsync(It.IsAny<CreateChannelOptions>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_mockChannel.Object);
 
-        _provider = new RabbitMqPostProvider(ProviderName, _mockFactory.Object);
+        _provider = new RabbitMqPostProvider(DomainName, _mockFactory.Object);
     }
 
     [Fact]
     public void Name_ShouldReturnProviderName()
     {
-        Assert.Equal(ProviderName, _provider.Name);
+        Assert.Equal(DomainName, _provider.Name);
     }
 
     [Fact]
@@ -43,10 +43,9 @@ public class RabbitMqPostProviderTests
         var mockReference = new Mock<IPostReference>();
         var mockMetadata = new Mock<IPostMetadata>();
         
-        mockReference.Setup(x => x.Provider).Returns(ProviderName);
         mockReference.Setup(x => x.Domain).Returns("test-domain");
         mockReference.Setup(x => x.Address).Returns("test-address");
-        mockReference.Setup(x => x.Contract).Returns("test-contract");
+        mockReference.Setup(x => x.Contract).Returns(new PostContract(name:"test-contract", version: "test-version", intent: PostIntent.Command));
 
         mockMetadata.Setup(x => x.MessageId).Returns(Guid.NewGuid().ToString());
         mockMetadata.Setup(x => x.ProducedAtUtc).Returns(DateTimeOffset.UtcNow);
@@ -54,7 +53,6 @@ public class RabbitMqPostProviderTests
 
         mockEnvelope.Setup(x => x.Reference).Returns(mockReference.Object);
         mockEnvelope.Setup(x => x.Metadata).Returns(mockMetadata.Object);
-        mockEnvelope.Setup(x => x.Content).Returns("test-content"u8.ToArray());
 
         var ct = CancellationToken.None;
 
@@ -63,7 +61,7 @@ public class RabbitMqPostProviderTests
 
         // Assert
         _mockChannel.Verify(x => x.BasicPublishAsync(
-            $"aetheric.post.{ProviderName}",
+            $"aetheric.post.{DomainName}",
             It.IsAny<string>(),
             It.IsAny<bool>(),
             It.IsAny<BasicProperties>(),

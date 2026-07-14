@@ -15,7 +15,19 @@ public sealed record PostContract : IPostContract
         Intent = intent;
     }
 
+    public bool Equals(PostContract? other) =>
+        other is not null &&
+        StringComparer.Ordinal.Equals(Name, other.Name) &&
+        StringComparer.Ordinal.Equals(Version, other.Version) &&
+        Intent == other.Intent;
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Name, Version, (int)Intent);
+    }
+
     public string Name { get; }
+    
     public string Version { get; }
     public PostIntent Intent { get; }
 
