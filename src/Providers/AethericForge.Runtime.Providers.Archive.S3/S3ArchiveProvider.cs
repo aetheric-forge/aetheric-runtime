@@ -1,9 +1,9 @@
 using System.Net;
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Providers;
+using AethericForge.Runtime.Models.Archive.Primitives;
 using Amazon.S3;
 using Amazon.S3.Model;
-using AethericForge.Runtime.Models.Archive;
 
 namespace AethericForge.Runtime.Providers.Archive.S3;
 

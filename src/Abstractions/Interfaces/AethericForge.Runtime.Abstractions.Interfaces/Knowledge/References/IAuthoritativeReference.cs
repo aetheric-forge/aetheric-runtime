@@ -7,4 +7,5 @@ public interface IAuthoritativeReference : IKnowledgeReference
 {
     IKnowledgeAuthority Authority { get; }
     string Role { get; }
+    string? Signature { get; }
 }

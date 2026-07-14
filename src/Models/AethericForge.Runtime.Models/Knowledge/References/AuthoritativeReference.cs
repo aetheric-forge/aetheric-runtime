@@ -13,7 +13,8 @@ public sealed record AuthoritativeReference : IAuthoritativeReference
         IKnowledgeAuthority authority,
         string role,
         int revision = 0,
-        string? contentHash = null)
+        string? contentHash = null,
+        string? signature = null)
     {
         Set = set ?? throw new ArgumentNullException(nameof(set));
         Kind = kind ?? throw new ArgumentNullException(nameof(kind));
@@ -23,6 +24,7 @@ public sealed record AuthoritativeReference : IAuthoritativeReference
         Role = role ?? throw new ArgumentNullException(nameof(role));
         Revision = revision;
         ContentHash = contentHash;
+        Signature = signature;
     }
 
     public string Set { get; init; }
@@ -33,6 +35,7 @@ public sealed record AuthoritativeReference : IAuthoritativeReference
     public string? ContentHash { get; init; }
     public IKnowledgeAuthority Authority { get; init; }
     public string Role { get; init; }
+    public string? Signature { get; init; }
 
     public override string ToString() => $"{Authority.Identity.SubjectId}@{Set}:{Kind}/{Name}#{Role}";
 }

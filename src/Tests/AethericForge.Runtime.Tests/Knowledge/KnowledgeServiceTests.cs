@@ -44,23 +44,25 @@ public class KnowledgeServiceTests
         var descriptor = new KnowledgeDescriptor("Title");
         var representations = new List<IKnowledgeRepresentation>();
         var artifact = new Mock<IKnowledgeArtifact>().Object;
+        var identity = new Mock<IIdentitySubject>();
+        var authority = new KnowledgeAuthority(identity.Object, "Global");
 
         var provider = new Mock<IKnowledgeProvider>();
         provider.Setup(p => p.Scheme).Returns("Primary");
-        provider.Setup(p => p.StoreArtifactAsync(descriptor, representations, null, It.IsAny<CancellationToken>()))
+        provider.Setup(p => p.StoreArtifactAsync(descriptor, representations, null, authority, It.IsAny<CancellationToken>()))
             .ReturnsAsync(artifact);
 
         var service = new KnowledgeService(new[] { provider.Object });
 
         // Act
-        var result = await service.PublishArtifactAsync(descriptor, representations);
+        var result = await service.PublishArtifactAsync(descriptor, representations, authority: authority);
 
         // Assert
         Assert.Same(artifact, result);
     }
 
     [Fact]
-    public async Task ResolveReferenceAsync_HandlesAuthoritativeReference()
+    public async Task ResolveReferenceAsync_ResolvesAuthoritativeReference()
     {
         // Arrange
         var identity = new Mock<IIdentitySubject>();
@@ -68,11 +70,14 @@ public class KnowledgeServiceTests
         var authority = new KnowledgeAuthority(identity.Object, "Global");
         
         var authRef = new AuthoritativeReference("Primary", "Artifact", "Test", "latest", authority, "Current");
+        var fixedRef = new KnowledgeReference("Primary", "Artifact", "Test", "1.0.1");
         var artifact = new Mock<IKnowledgeArtifact>().Object;
 
         var provider = new Mock<IKnowledgeProvider>();
         provider.Setup(p => p.Scheme).Returns("Primary");
-        provider.Setup(p => p.GetArtifactAsync(authRef, It.IsAny<CancellationToken>()))
+        provider.Setup(p => p.ResolveAuthoritativeReferenceAsync(authRef, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fixedRef);
+        provider.Setup(p => p.GetArtifactAsync(fixedRef, It.IsAny<CancellationToken>()))
             .ReturnsAsync(artifact);
 
         var service = new KnowledgeService(new[] { provider.Object });
@@ -82,5 +87,26 @@ public class KnowledgeServiceTests
 
         // Assert
         Assert.Same(artifact, result);
+    }
+
+    [Fact]
+    public async Task SetAuthoritativeReferenceAsync_CallsProvider()
+    {
+        // Arrange
+        var identity = new Mock<IIdentitySubject>();
+        var authority = new KnowledgeAuthority(identity.Object, "Global");
+        var authRef = new AuthoritativeReference("Primary", "Artifact", "Test", "latest", authority, "Current");
+        var targetRef = new KnowledgeReference("Primary", "Artifact", "Test", "1.0.1");
+
+        var provider = new Mock<IKnowledgeProvider>();
+        provider.Setup(p => p.Scheme).Returns("Primary");
+
+        var service = new KnowledgeService(new[] { provider.Object });
+
+        // Act
+        await service.SetAuthoritativeReferenceAsync(authRef, targetRef);
+
+        // Assert
+        provider.Verify(p => p.SetAuthoritativeReferenceAsync(authRef, targetRef, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

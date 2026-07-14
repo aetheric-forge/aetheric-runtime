@@ -1,6 +1,6 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
 
-namespace AethericForge.Runtime.Models.Archive;
+namespace AethericForge.Runtime.Models.Archive.Primitives;
 
 public abstract class ArchiveObjectBase : IArchiveObject
 {

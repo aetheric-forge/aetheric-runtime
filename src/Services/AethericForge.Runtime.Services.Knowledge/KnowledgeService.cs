@@ -1,4 +1,5 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Artifacts;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Providers;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.References;
@@ -33,13 +34,14 @@ public sealed class KnowledgeService : IKnowledgeService
         IKnowledgeDescriptor descriptor,
         IEnumerable<IKnowledgeRepresentation> representations,
         IEnumerable<IKnowledgeReference>? lineage = null,
+        IKnowledgeAuthority? authority = null,
         CancellationToken cancellationToken = default)
     {
         // For now, we'll default to a primary provider if available, or throw.
         var provider = _providers.Values.FirstOrDefault() 
             ?? throw new InvalidOperationException("No knowledge providers available.");
 
-        return await provider.StoreArtifactAsync(descriptor, representations, lineage, cancellationToken);
+        return await provider.StoreArtifactAsync(descriptor, representations, lineage, authority, cancellationToken);
     }
 
     public async Task<IKnowledgeArtifact?> ResolveReferenceAsync(
@@ -48,10 +50,34 @@ public sealed class KnowledgeService : IKnowledgeService
     {
         if (reference is IAuthoritativeReference authRef)
         {
-            // TODO: In a real system, we would query authoritative claims to find the fixed reference.
-            // For now, we'll just resolve it as a normal reference.
+            if (_providers.TryGetValue(authRef.Set, out var provider))
+            {
+                var resolvedReference = await provider.ResolveAuthoritativeReferenceAsync(authRef, cancellationToken);
+                if (resolvedReference != null)
+                {
+                    return await GetArtifactAsync(resolvedReference, cancellationToken);
+                }
+            }
         }
 
         return await GetArtifactAsync(reference, cancellationToken);
+    }
+
+    public async Task SetAuthoritativeReferenceAsync(
+        IAuthoritativeReference reference, 
+        IKnowledgeReference target, 
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(reference);
+        ArgumentNullException.ThrowIfNull(target);
+
+        if (_providers.TryGetValue(reference.Set, out var provider))
+        {
+            await provider.SetAuthoritativeReferenceAsync(reference, target, cancellationToken);
+        }
+        else
+        {
+            throw new InvalidOperationException($"No provider found for scheme '{reference.Set}'.");
+        }
     }
 }

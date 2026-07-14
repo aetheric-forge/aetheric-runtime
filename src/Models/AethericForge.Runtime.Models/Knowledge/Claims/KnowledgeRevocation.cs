@@ -1,4 +1,5 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Claims;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Representations;
@@ -19,7 +20,8 @@ public sealed class KnowledgeRevocation : KnowledgeArtifact, IKnowledgeRevocatio
         KnowledgeLifecycle lifecycle = KnowledgeLifecycle.Catalogued,
         KnowledgeState state = KnowledgeState.Available,
         DateTimeOffset? createdAtUtc = null,
-        DateTimeOffset? updatedAtUtc = null)
+        DateTimeOffset? updatedAtUtc = null,
+        IKnowledgeAuthority? authority = null)
         : base(
             reference, 
             descriptor, 
@@ -28,7 +30,8 @@ public sealed class KnowledgeRevocation : KnowledgeArtifact, IKnowledgeRevocatio
             lifecycle, 
             state, 
             createdAtUtc, 
-            updatedAtUtc)
+            updatedAtUtc,
+            authority)
     {
         Asserter = asserter ?? throw new ArgumentNullException(nameof(asserter));
         Target = target ?? throw new ArgumentNullException(nameof(target));

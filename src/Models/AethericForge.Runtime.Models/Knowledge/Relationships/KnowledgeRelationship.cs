@@ -1,3 +1,4 @@
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Relationships;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Representations;
@@ -17,7 +18,8 @@ public sealed class KnowledgeRelationship : KnowledgeArtifact, IKnowledgeRelatio
         KnowledgeLifecycle lifecycle = KnowledgeLifecycle.Catalogued,
         KnowledgeState state = KnowledgeState.Available,
         DateTimeOffset? createdAtUtc = null,
-        DateTimeOffset? updatedAtUtc = null)
+        DateTimeOffset? updatedAtUtc = null,
+        IKnowledgeAuthority? authority = null)
         : base(
             reference, 
             descriptor, 
@@ -26,7 +28,8 @@ public sealed class KnowledgeRelationship : KnowledgeArtifact, IKnowledgeRelatio
             lifecycle, 
             state, 
             createdAtUtc, 
-            updatedAtUtc)
+            updatedAtUtc,
+            authority)
     {
         RelationshipType = relationshipType ?? throw new ArgumentNullException(nameof(relationshipType));
         Participants = participants?.ToArray() ?? throw new ArgumentNullException(nameof(participants));

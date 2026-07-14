@@ -1,6 +1,6 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Institutions.Library;
-using AethericForge.Runtime.Models.Archive;
+using AethericForge.Runtime.Models.Archive.Primitives;
 using AethericForge.Runtime.Models.Knowledge.Primitives;
 
 namespace AethericForge.Runtime.Tests;
@@ -17,6 +17,67 @@ public class LibraryTests
         Assert.True(library.ContainsShelf("general"));
         Assert.Same(shelf, library.GetShelf("general"));
         Assert.Single(library.Shelves);
+    }
+
+    [Fact]
+    public void Library_CreateShelf_Throws_When_Already_Exists()
+    {
+        var library = new Library();
+        library.CreateShelf("general");
+
+        Assert.Throws<InvalidOperationException>(() => library.CreateShelf("general"));
+    }
+
+    [Fact]
+    public void Library_GetOrCreateShelf_Returns_Existing_If_Found()
+    {
+        var library = new Library();
+        var original = library.CreateShelf("general");
+        var retrieved = library.GetOrCreateShelf("general");
+
+        Assert.Same(original, retrieved);
+    }
+
+    [Fact]
+    public void Library_GetOrCreateShelf_Creates_If_Missing()
+    {
+        var library = new Library();
+        var created = library.GetOrCreateShelf("general");
+
+        Assert.NotNull(created);
+        Assert.True(library.ContainsShelf("general"));
+    }
+
+    [Fact]
+    public void Library_RemoveShelf_Works()
+    {
+        var library = new Library();
+        library.CreateShelf("general");
+
+        Assert.True(library.RemoveShelf("general"));
+        Assert.False(library.ContainsShelf("general"));
+        Assert.False(library.RemoveShelf("general"));
+    }
+
+    [Fact]
+    public void Library_GetShelf_Throws_When_Missing()
+    {
+        var library = new Library();
+        Assert.Throws<KeyNotFoundException>(() => library.GetShelf("missing"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void Library_Operations_Throw_On_Invalid_Name(string name)
+    {
+        var library = new Library();
+        Assert.Throws<ArgumentException>(() => library.CreateShelf(name));
+        Assert.Throws<ArgumentException>(() => library.GetShelf(name));
+        Assert.Throws<ArgumentException>(() => library.GetOrCreateShelf(name));
+        Assert.Throws<ArgumentException>(() => library.ContainsShelf(name));
+        Assert.Throws<ArgumentException>(() => library.RemoveShelf(name));
     }
 
     [Fact]

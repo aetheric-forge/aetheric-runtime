@@ -133,6 +133,33 @@ public class IdentityServiceTests
         Assert.Null(result);
     }
 
+    [Fact]
+    public async Task ResolvePrincipalAsync_Throws_When_Scheme_Not_Found()
+    {
+        // Arrange
+        var service = new IdentityService(Enumerable.Empty<IIdentityProvider>(), _lifecycleService);
+        var subject = new IdentitySubject("id", IdentityScheme.OpenIdConnect);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => service.ResolvePrincipalAsync(subject));
+    }
+
+    [Fact]
+    public async Task AuthenticateAsync_Uses_Correct_Provider_Among_Multiple()
+    {
+        // Arrange
+        var provider1 = new StubIdentityProvider(IdentityScheme.Local);
+        var provider2 = new StubIdentityProvider(IdentityScheme.OpenIdConnect);
+        var service = new IdentityService(new[] { provider1, provider2 }, _lifecycleService);
+
+        // Act
+        await service.AuthenticateAsync(IdentityScheme.OpenIdConnect, new Dictionary<string, string>());
+
+        // Assert
+        Assert.NotNull(provider2.LastCredentials);
+        Assert.Null(provider1.LastCredentials);
+    }
+
     private class StubIdentityProvider : IIdentityProvider
     {
         private readonly IIdentitySubject? _subject;

@@ -1,5 +1,6 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Artifacts;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Claims;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Representations;
@@ -21,7 +22,8 @@ public class KnowledgeClaim : KnowledgeArtifact, IKnowledgeClaim
         KnowledgeLifecycle lifecycle = KnowledgeLifecycle.Catalogued,
         KnowledgeState state = KnowledgeState.Available,
         DateTimeOffset? createdAtUtc = null,
-        DateTimeOffset? updatedAtUtc = null)
+        DateTimeOffset? updatedAtUtc = null,
+        IKnowledgeAuthority? authority = null)
         : base(
             reference, 
             descriptor, 
@@ -30,7 +32,8 @@ public class KnowledgeClaim : KnowledgeArtifact, IKnowledgeClaim
             lifecycle, 
             state, 
             createdAtUtc, 
-            updatedAtUtc)
+            updatedAtUtc,
+            authority)
     {
         Asserter = asserter ?? throw new ArgumentNullException(nameof(asserter));
         ClaimType = claimType ?? throw new ArgumentNullException(nameof(claimType));

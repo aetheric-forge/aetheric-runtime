@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
 
-namespace AethericForge.Runtime.Models.Archive;
+namespace AethericForge.Runtime.Models.Archive.Primitives;
 
 public sealed record ArchiveReference : IArchiveReference
 {

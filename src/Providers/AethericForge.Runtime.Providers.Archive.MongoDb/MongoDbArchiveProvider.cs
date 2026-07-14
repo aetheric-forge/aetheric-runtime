@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Runtime.CompilerServices;
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Providers;
-using AethericForge.Runtime.Models.Archive;
+using AethericForge.Runtime.Models.Archive.Primitives;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 
