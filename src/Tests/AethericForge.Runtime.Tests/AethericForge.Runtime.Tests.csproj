@@ -34,6 +34,8 @@
     <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Identity.Keycloak\AethericForge.Runtime.Providers.Identity.Keycloak.csproj" />
     <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Identity\AethericForge.Runtime.Services.Identity.csproj" />
     <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Knowledge\AethericForge.Runtime.Services.Knowledge.csproj" />
+    <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Archive.S3\AethericForge.Runtime.Providers.Archive.S3.csproj" />
+    <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Post.RabbitMq\AethericForge.Runtime.Providers.Post.RabbitMq.csproj" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

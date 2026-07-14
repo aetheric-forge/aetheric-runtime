@@ -1,9 +1,12 @@
 using System.Security.Cryptography;
+using System.Runtime.CompilerServices;
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Providers;
 using AethericForge.Runtime.Models.Archive;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+
+[assembly: InternalsVisibleTo("AethericForge.Runtime.Tests")]
 
 namespace AethericForge.Runtime.Providers.Archive.MongoDb;
 
@@ -212,7 +215,7 @@ public sealed class MongoDbArchiveProvider : IArchiveProvider
         return normalized;
     }
 
-    private sealed class MongoArchiveDocument
+    internal sealed class MongoArchiveDocument
     {
         [BsonId]
         public string Key { get; set; } = string.Empty;

@@ -13,16 +13,21 @@ namespace AethericForge.Runtime.Providers.Post.RabbitMq;
 public sealed class RabbitMqPostProvider : IPostProvider, IAsyncDisposable
 {
     private readonly string _name;
-    private readonly ConnectionFactory _connectionFactory;
+    private readonly IConnectionFactory _connectionFactory;
     private IConnection? _connection;
     private IChannel? _channel;
     private readonly string _exchangeName;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     public RabbitMqPostProvider(string name, string connectionString)
+        : this(name, new ConnectionFactory { Uri = new Uri(connectionString) })
+    {
+    }
+
+    public RabbitMqPostProvider(string name, IConnectionFactory connectionFactory)
     {
         _name = name;
-        _connectionFactory = new ConnectionFactory { Uri = new Uri(connectionString) };
+        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _exchangeName = $"aetheric.post.{_name}";
     }
 
