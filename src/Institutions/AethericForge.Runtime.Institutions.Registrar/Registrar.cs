@@ -3,19 +3,15 @@ using AethericForge.Runtime.Abstractions.Interfaces.Identity.Authentication;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Claims;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
+using AethericForge.Runtime.Abstractions.Interfaces.Institutions;
 using AethericForge.Runtime.Models.Identity.Primitives;
 
 namespace AethericForge.Runtime.Institutions.Registrar;
 
-public sealed class Registrar : IRegistrarInstitution
+public sealed class Registrar(IAuthenticationService authenticationService, IInstitutionContext context) : IRegistrarInstitution
 {
-    private readonly IAuthenticationService _authenticationService;
+    private readonly IAuthenticationService _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
     private readonly ConcurrentDictionary<string, IPrincipalIdentity> _records = new(StringComparer.Ordinal);
-
-    public Registrar(IAuthenticationService authenticationService)
-    {
-        _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
-    }
 
     public Task<IPrincipalIdentity> RegisterAsync(
         IIdentitySubject subject,
@@ -128,5 +124,22 @@ public sealed class Registrar : IRegistrarInstitution
             claim.Issuer ?? string.Empty,
             claim.IssuedAtUtc?.ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
             claim.ExpiresAtUtc?.ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty);
+    }
+
+    public IInstitutionContext Context { get; } = context ?? throw new ArgumentNullException(nameof(context));
+    
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task StartAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 }

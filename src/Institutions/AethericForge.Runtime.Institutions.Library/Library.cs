@@ -1,8 +1,9 @@
 using System.Collections.Concurrent;
+using AethericForge.Runtime.Abstractions.Interfaces.Institutions;
 
 namespace AethericForge.Runtime.Institutions.Library;
 
-public sealed class Library : ILibraryInstitution
+public sealed class Library(IInstitutionContext context) : ILibraryInstitution
 {
     private readonly ConcurrentDictionary<string, Shelf> _shelves = new(StringComparer.Ordinal);
 
@@ -53,5 +54,22 @@ public sealed class Library : ILibraryInstitution
         }
 
         return name.Trim();
+    }
+
+    public IInstitutionContext Context { get; } = context ?? throw new ArgumentNullException(nameof(context));
+
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task StartAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 }

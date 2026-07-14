@@ -22,4 +22,6 @@ public interface IRegistrarInstitution : IInstitution
     Task<bool> ExistsAsync(
         IIdentitySubject subject,
         CancellationToken ct = default);
+
+    new IInstitutionContext Context { get; }
 }
