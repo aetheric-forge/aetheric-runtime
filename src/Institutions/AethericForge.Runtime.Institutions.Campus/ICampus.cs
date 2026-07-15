@@ -1,0 +1,15 @@
+using AethericForge.Runtime.Abstractions.Interfaces.Institutions;
+using AethericForge.Runtime.Institutions.Archive;
+using AethericForge.Runtime.Institutions.PostOffice;
+using AethericForge.Runtime.Institutions.Registrar;
+
+namespace AethericForge.Runtime.Institutions.Campus;
+
+public interface ICampus : IInstitution
+{
+    IArchive Archive { get; }
+
+    IPostOffice PostOffice { get; }
+
+    IRegistrar Registrar { get; }
+}

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <LangVersion>latestmajor</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="6.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Moq" Version="4.18.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Abstractions\Interfaces\AethericForge.Runtime.Abstractions.Interfaces\AethericForge.Runtime.Abstractions.Interfaces.csproj" />
+    <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Library\AethericForge.Runtime.Institutions.Library.csproj" />
+    <ProjectReference Include="..\..\Models\AethericForge.Runtime.Models\AethericForge.Runtime.Models.csproj" />
+    <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Post.InMemory\AethericForge.Runtime.Providers.Post.InMemory.csproj" />
+    <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Archive.MongoDb\AethericForge.Runtime.Providers.Archive.MongoDb.csproj" />
+    <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Post\AethericForge.Runtime.Services.Post.csproj" />
+    <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Staging\AethericForge.Runtime.Services.Staging.csproj" />
+    <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Archive\AethericForge.Runtime.Services.Archive.csproj" />
+    <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Staging.Redis\AethericForge.Runtime.Providers.Staging.Redis.csproj" />
+    <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Identity.Keycloak\AethericForge.Runtime.Providers.Identity.Keycloak.csproj" />
+    <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Identity\AethericForge.Runtime.Services.Identity.csproj" />
+    <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Knowledge\AethericForge.Runtime.Services.Knowledge.csproj" />
+    <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Archive.S3\AethericForge.Runtime.Providers.Archive.S3.csproj" />
+    <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Post.RabbitMq\AethericForge.Runtime.Providers.Post.RabbitMq.csproj" />
+    <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Campus\AethericForge.Runtime.Institutions.Campus.csproj" />
+    <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.PostOffice\AethericForge.Runtime.Institutions.PostOffice.csproj" />
+    <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Archive\AethericForge.Runtime.Institutions.Archive.csproj" />
+  </ItemGroup>
+</Project>
