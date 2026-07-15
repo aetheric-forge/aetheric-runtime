@@ -1,6 +1,4 @@
-using AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
-
-namespace AethericForge.Runtime.Institutions.Archive;
+namespace AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
 
 /// <summary>
 /// Provides the operational storage used by an Archive.

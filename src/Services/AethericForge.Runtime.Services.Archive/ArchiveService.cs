@@ -33,14 +33,25 @@ public sealed class ArchiveService : IArchiveService
         return GetProvider(store).PutAsync(key, content, metadata, ct);
     }
 
-    public Task<Stream> OpenReadAsync(
+    public Task<IArchiveReference> ArchiveAsync(
+        Stream content,
+        IArchiveMetadata? metadata = null,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        ct.ThrowIfCancellationRequested();
+
+        return _providers.Values.First().ArchiveAsync(content, metadata, ct);
+    }
+
+    public Task<Stream> RetrieveAsync(
         IArchiveReference reference,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(reference);
         ct.ThrowIfCancellationRequested();
 
-        return GetProvider(reference).OpenReadAsync(reference, ct);
+        return GetProvider(reference).RetrieveAsync(reference, ct);
     }
 
     public Task<IArchiveMetadata?> StatAsync(

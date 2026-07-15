@@ -75,7 +75,7 @@ public sealed class MongoDbArchiveProvider : IArchiveProvider
         return new ArchiveReference(Store, normalizedKey);
     }
 
-    public async Task<Stream> OpenReadAsync(
+    public async Task<Stream> RetrieveAsync(
         IArchiveReference reference,
         CancellationToken ct = default)
     {

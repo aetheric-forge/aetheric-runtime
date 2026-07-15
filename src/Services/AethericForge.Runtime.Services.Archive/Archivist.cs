@@ -76,7 +76,7 @@ public sealed class Archivist(ITeam<IArchiveClerk> team) : IArchivist
             return default;
         }
 
-        using var stream = await _archiveService.OpenReadAsync(reference, ct);
+        using var stream = await _archiveService.RetrieveAsync(reference, ct);
         return await serializer.DeserializeAsync<T>(stream, ct);
     }
 

@@ -45,19 +45,36 @@ public class ArchiveServiceTests
     }
 
     [Fact]
-    public async Task OpenReadAsync_Calls_Correct_Provider()
+    public async Task RetrieveAsync_Calls_Correct_Provider()
     {
         // Arrange
         var reference = new ArchiveReference(StoreName, "key");
         using var stream = new MemoryStream();
-        _providerMock.Setup(x => x.OpenReadAsync(reference, It.IsAny<CancellationToken>()))
+        _providerMock.Setup(x => x.RetrieveAsync(reference, It.IsAny<CancellationToken>()))
             .ReturnsAsync(stream);
 
         // Act
-        var result = await _service.OpenReadAsync(reference);
+        var result = await _service.RetrieveAsync(reference);
 
         // Assert
         Assert.Same(stream, result);
+    }
+
+    [Fact]
+    public async Task ArchiveAsync_Calls_Default_Provider()
+    {
+        // Arrange
+        using var stream = new MemoryStream();
+        var reference = new ArchiveReference(StoreName, "key");
+        _providerMock.Setup(x => x.ArchiveAsync(stream, It.IsAny<IArchiveMetadata>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(reference);
+
+        // Act
+        var result = await _service.ArchiveAsync(stream);
+
+        // Assert
+        Assert.Same(reference, result);
+        _providerMock.Verify(x => x.ArchiveAsync(stream, It.IsAny<IArchiveMetadata>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

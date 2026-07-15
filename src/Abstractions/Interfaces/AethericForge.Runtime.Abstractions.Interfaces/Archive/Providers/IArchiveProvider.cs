@@ -2,7 +2,7 @@ using AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
 
 namespace AethericForge.Runtime.Abstractions.Interfaces.Archive.Providers;
 
-public interface IArchiveProvider
+public interface IArchiveProvider : IArchiveVault
 {
     string Store { get; }
 
@@ -12,7 +12,16 @@ public interface IArchiveProvider
         IArchiveMetadata? metadata = null,
         CancellationToken ct = default);
 
-    Task<Stream> OpenReadAsync(
+    Task<IArchiveReference> IArchiveVault.ArchiveAsync(
+        Stream content,
+        IArchiveMetadata? metadata = null,
+        CancellationToken ct = default) => PutAsync(Guid.NewGuid().ToString(), content, metadata, ct);
+
+    Task<Stream> IArchiveVault.RetrieveAsync(
+        IArchiveReference reference,
+        CancellationToken ct = default) => RetrieveAsync(reference, ct);
+
+    Task<Stream> RetrieveAsync(
         IArchiveReference reference,
         CancellationToken ct = default);
 

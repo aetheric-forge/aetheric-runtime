@@ -2,7 +2,7 @@ using AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
 
 namespace AethericForge.Runtime.Abstractions.Interfaces.Archive.Services;
 
-public interface IArchiveService
+public interface IArchiveService : IArchiveVault
 {
     Task<IArchiveReference> PutAsync(
         string store,
@@ -11,19 +11,19 @@ public interface IArchiveService
         IArchiveMetadata? metadata = null,
         CancellationToken ct = default);
 
-    Task<Stream> OpenReadAsync(
+    new Task<Stream> RetrieveAsync(
         IArchiveReference reference,
         CancellationToken ct = default);
 
-    Task<IArchiveMetadata?> StatAsync(
+    new Task<IArchiveMetadata?> StatAsync(
         IArchiveReference reference,
         CancellationToken ct = default);
 
-    Task<bool> ExistsAsync(
+    new Task<bool> ExistsAsync(
         IArchiveReference reference,
         CancellationToken ct = default);
 
-    Task<bool> DeleteAsync(
+    new Task<bool> DeleteAsync(
         IArchiveReference reference,
         CancellationToken ct = default);
 }

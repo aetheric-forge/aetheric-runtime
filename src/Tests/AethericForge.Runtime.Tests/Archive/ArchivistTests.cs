@@ -72,7 +72,7 @@ public class ArchivistTests
             .ReturnsAsync(metadata);
 
         _archiveServiceMock
-            .Setup(x => x.OpenReadAsync(reference, It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveAsync(reference, It.IsAny<CancellationToken>()))
             .ReturnsAsync(stream);
 
         // Act
