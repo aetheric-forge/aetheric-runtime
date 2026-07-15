@@ -1,6 +1,6 @@
 namespace AethericForge.Runtime.Abstractions.Interfaces.Post.Services;
 
-public interface IMailClerk
+public interface IPostClerk
 {
     
 }

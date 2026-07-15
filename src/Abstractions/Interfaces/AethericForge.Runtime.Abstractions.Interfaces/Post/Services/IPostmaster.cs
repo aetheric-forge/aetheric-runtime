@@ -12,7 +12,7 @@ namespace AethericForge.Runtime.Abstractions.Interfaces.Post.Services;
 /// <summary>
 /// Provides high-level postal services for sending and receiving post.
 /// </summary>
-public interface IPostmaster : IAuthority<IMailClerk>
+public interface IPostmaster : IAuthority<IPostClerk>
 {
     /// <summary>
     /// Sends a post envelope.

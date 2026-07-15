@@ -1,12 +1,10 @@
-using AethericForge.Runtime.Abstractions.Interfaces.Post;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Consumers;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
-using AethericForge.Runtime.Abstractions.Interfaces.Post.Providers;
 using AethericForge.Runtime.Models.Post;
 using AethericForge.Runtime.Providers.Post.InMemory;
 using AethericForge.Runtime.Services.Post;
 
-namespace AethericForge.Runtime.Tests;
+namespace AethericForge.Runtime.Tests.Post;
 
 public class PostTests
 {
