@@ -13,7 +13,7 @@ public class CampusTests : InstitutionTests<Campus>
         return new Campus((ICampusContext)context);
     }
 
-    protected override IInstitutionContext CreateContext()
+    protected override ICampusContext CreateContext()
     {
         var template = InstitutionTemplateBuilder.Create()
             .UseModule<CampusModule>()
@@ -46,5 +46,12 @@ public class CampusTests : InstitutionTests<Campus>
         await campus.InitializeAsync();
         await campus.StartAsync();
         await campus.StopAsync();
+    }
+    
+    [Fact]
+    public void Constructor_WithNullContext_ShouldThrow()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new Campus(null!));
     }
 }

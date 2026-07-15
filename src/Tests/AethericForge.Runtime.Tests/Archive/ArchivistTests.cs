@@ -3,6 +3,7 @@ using AethericForge.Runtime.Abstractions.Interfaces.Archive.Serialization;
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Services;
 using AethericForge.Runtime.Models.Archive.Primitives;
 using AethericForge.Runtime.Models.Archive.Serialization;
+using AethericForge.Runtime.Models.Authorities;
 using AethericForge.Runtime.Services.Archive;
 using Moq;
 
@@ -18,7 +19,7 @@ public class ArchivistTests
     {
         _archiveServiceMock = new Mock<IArchiveService>();
         _jsonSerializer = new JsonArchiveSerializer();
-        _archivist = new Archivist(_archiveServiceMock.Object, new[] { _jsonSerializer });
+        _archivist = new Archivist(_archiveServiceMock.Object, new Team<IArchiveClerk>(Array.Empty<IArchiveClerk>()),new[] { _jsonSerializer });
     }
 
     [Fact]

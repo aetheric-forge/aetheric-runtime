@@ -1,21 +1,26 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Serialization;
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Services;
+using AethericForge.Runtime.Abstractions.Interfaces.Authorities;
 using AethericForge.Runtime.Models.Archive.Primitives;
+using AethericForge.Runtime.Models.Authorities;
 
 namespace AethericForge.Runtime.Services.Archive;
 
-public sealed class Archivist : IArchivist
+public sealed class Archivist(ITeam<IArchiveClerk> team) : IArchivist
 {
     private readonly IArchiveService _archiveService;
+    private readonly ITeam<IArchiveClerk> _team;
     private readonly Dictionary<string, IArchiveSerializer> _serializers;
     private readonly string _defaultContentType;
 
     public Archivist(
         IArchiveService archiveService,
-        IEnumerable<IArchiveSerializer> serializers)
+        ITeam<IArchiveClerk> team,
+        IEnumerable<IArchiveSerializer> serializers) : this(team)
     {
         _archiveService = archiveService ?? throw new ArgumentNullException(nameof(archiveService));
+        _team = team;
         _serializers = (serializers ?? throw new ArgumentNullException(nameof(serializers)))
             .ToDictionary(s => s.ContentType, StringComparer.OrdinalIgnoreCase);
 
@@ -74,4 +79,6 @@ public sealed class Archivist : IArchivist
         using var stream = await _archiveService.OpenReadAsync(reference, ct);
         return await serializer.DeserializeAsync<T>(stream, ct);
     }
+
+    public ITeam<IArchiveClerk> Team => _team;
 }
