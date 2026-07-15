@@ -30,12 +30,14 @@ public abstract class InstitutionBase : IInstitution
 
 public class InstitutionContext : IInstitutionContext
 {
-    public InstitutionContext(IInstitutionTemplate template, IServiceProvider services)
+    public InstitutionContext(IInstitutionTemplate template, IServiceProvider services, IInstitution? parent = null)
     {
         Template = template ?? throw new ArgumentNullException(nameof(template));
         Services = services ?? throw new ArgumentNullException(nameof(services));
+        Parent = parent;
     }
 
+    public IInstitution? Parent { get; }
     public IInstitutionTemplate Template { get; }
     public IServiceProvider Services { get; }
 }

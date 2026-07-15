@@ -7,7 +7,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\AethericForge.Runtime.Institutions.Abstractions\AethericForge.Runtime.Institutions.Abstractions.csproj" />
       <ProjectReference Include="..\..\Abstractions\Interfaces\AethericForge.Runtime.Abstractions.Interfaces\AethericForge.Runtime.Abstractions.Interfaces.csproj" />
+      <ProjectReference Include="..\..\Models\AethericForge.Runtime.Models\AethericForge.Runtime.Models.csproj" />
     </ItemGroup>
 
 </Project>

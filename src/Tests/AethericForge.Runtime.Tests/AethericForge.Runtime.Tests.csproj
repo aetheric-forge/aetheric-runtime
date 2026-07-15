@@ -22,8 +22,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Abstractions\Interfaces\AethericForge.Runtime.Abstractions.Interfaces\AethericForge.Runtime.Abstractions.Interfaces.csproj" />
-    <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Library\AethericForge.Runtime.Institutions.Library.csproj" />
-    <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Registrar\AethericForge.Runtime.Institutions.Registrar.csproj" />
     <ProjectReference Include="..\..\Models\AethericForge.Runtime.Models\AethericForge.Runtime.Models.csproj" />
     <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Post.InMemory\AethericForge.Runtime.Providers.Post.InMemory.csproj" />
     <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Archive.MongoDb\AethericForge.Runtime.Providers.Archive.MongoDb.csproj" />
@@ -36,5 +34,6 @@
     <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Knowledge\AethericForge.Runtime.Services.Knowledge.csproj" />
     <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Archive.S3\AethericForge.Runtime.Providers.Archive.S3.csproj" />
     <ProjectReference Include="..\..\Providers\AethericForge.Runtime.Providers.Post.RabbitMq\AethericForge.Runtime.Providers.Post.RabbitMq.csproj" />
+    <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Campus\AethericForge.Runtime.Institutions.Campus.csproj" />
   </ItemGroup>
 </Project>
