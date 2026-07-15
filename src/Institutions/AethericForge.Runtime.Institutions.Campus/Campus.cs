@@ -1,5 +1,6 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Institutions;
 using AethericForge.Runtime.Institutions.Archive;
+using AethericForge.Runtime.Institutions.Library;
 using AethericForge.Runtime.Institutions.PostOffice;
 using AethericForge.Runtime.Institutions.Registrar;
 using AethericForge.Runtime.Models.Institutions;
@@ -33,4 +34,5 @@ public sealed class Campus : InstitutionBase, ICampus
     public IArchive Archive => Resolve<IArchive>();
     public IPostOffice PostOffice => Resolve<IPostOffice>();
     public IRegistrar Registrar => Resolve<IRegistrar>();
+    public ILibrary Library => Resolve<ILibrary>();
 }
