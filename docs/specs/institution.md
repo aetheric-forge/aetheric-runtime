@@ -1,4 +1,6 @@
-## Article IV — Institution
+# Constitutional Article — Institution
+
+## Article III — Institution
 
 ### §1. Definition
 

@@ -1,6 +1,6 @@
 # Constitutional Article — Library
 
-## Article V — Library
+## Article VIII — Library
 
 ### §1. Definition
 

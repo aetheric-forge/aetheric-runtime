@@ -1,6 +1,6 @@
 # Constitutional Article — Registrar
 
-## Article IV — Registrar
+## Article VII — Registrar
 
 ### §1. Definition
 
@@ -14,9 +14,9 @@ The Registrar does not create identity.
 
 ### §2. Purpose
 
-Every Institution **SHALL** maintain a Registrar.
+Every Campus **SHALL** maintain a Registrar.
 
-The purpose of the Registrar is to provide an authoritative and discoverable account of the facts recognized by the Institution.
+The purpose of the Registrar is to provide an authoritative and discoverable account of the facts recognized within the Campus and its institutional hierarchy.
 
 The Registrar exists to enable lawful recognition, reliable administration, accountability, and institutional continuity.
 

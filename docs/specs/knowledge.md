@@ -1,6 +1,8 @@
-# Article II — Knowledge
+# Constitutional Article — Knowledge
 
-## Knowledge
+## Article II — Knowledge
+
+### §1. Definition
 
 **Knowledge** is information made intelligible within the Forge through structure, context, and relationships.
 
@@ -8,7 +10,19 @@ Knowledge is not limited to facts or assertions. It may include observations, in
 
 Knowledge is independent of any particular encoding, storage medium, transport, or service provider.
 
-## Knowledge Artifact
+---
+
+### §2. Purpose
+
+The Knowledge domain establishes the concepts by which the Forge identifies, represents, relates, derives, preserves, and evaluates meaningful information.
+
+It exists to preserve the identity, provenance, integrity, lineage, and contextual authority of Knowledge independently of implementation technology.
+
+Knowledge **SHALL** remain distinguishable from the Representations, storage systems, transports, and providers through which it is expressed or conveyed.
+
+---
+
+### §3. Knowledge Artifact
 
 A **Knowledge Artifact** is a discrete, identifiable unit of Knowledge.
 
@@ -16,7 +30,9 @@ An Artifact may be created, referenced, exchanged, preserved, revised, derived, 
 
 An Artifact is not necessarily a file or document. It may represent any sufficiently bounded body of Knowledge.
 
-## Representation
+---
+
+### §4. Representation
 
 A **Representation** is a concrete expression of a Knowledge Artifact.
 
@@ -24,7 +40,9 @@ An Artifact may have multiple Representations, including different encodings, fo
 
 A Representation belongs to an Artifact but does not, by itself, define the Artifact’s identity.
 
-## Immutability
+---
+
+### §5. Immutability
 
 A Knowledge Artifact is immutable.
 
@@ -32,7 +50,9 @@ Once established, its content and intrinsic metadata cannot be altered. Any chan
 
 Immutability does not require an Artifact to remain available forever. It requires that an Artifact cannot be replaced by different Knowledge while retaining the same identity.
 
-## Lineage
+---
+
+### §6. Lineage
 
 **Lineage** records the relationships through which one Artifact originates from, transforms, supersedes, or incorporates another.
 
@@ -40,7 +60,9 @@ An Artifact may identify zero or more predecessor Artifacts. Consequently, linea
 
 Lineage relationships are themselves meaningful Knowledge and must be independently verifiable.
 
-## Revision
+---
+
+### §7. Revision
 
 A **Revision** is an Artifact related to an earlier Artifact by an explicit revision relationship.
 
@@ -48,15 +70,19 @@ A Revision does not modify or replace its predecessor. It expresses a newer stat
 
 No Revision is intrinsically “current.” Currency is established by an authoritative reference, publication, or institutional policy.
 
-## Derivation
+---
+
+### §8. Derivation
 
 A **Derived Artifact** is produced using one or more existing Artifacts as sources.
 
 Derivation includes revision, translation, transformation, compilation, aggregation, extraction, and other processes that produce distinct Knowledge from existing Knowledge.
 
-Where known, a Derived Artifact should identify both its source Artifacts and the process responsible for its creation.
+Where known, a Derived Artifact **SHOULD** identify both its source Artifacts and the process responsible for its creation.
 
-## Reference
+---
+
+### §9. Reference
 
 A **Reference** identifies or resolves to a Knowledge Artifact.
 
@@ -69,7 +95,9 @@ A fixed Reference remains stable because its target cannot change. A symbolic Re
 
 References do not imply ownership, endorsement, truth, or authority.
 
-## Authority
+---
+
+### §10. Authority
 
 An **Authority** is an Identity recognized within a particular context as competent to make assertions about Knowledge.
 
@@ -79,7 +107,9 @@ Authority is contextual rather than universal. An Identity may be authoritative 
 
 Recognition of authority does not make an assertion objectively true. It identifies who made the assertion and the context in which it is accepted.
 
-## Authoritative Reference
+---
+
+### §11. Authoritative Reference
 
 An **Authoritative Reference** is a symbolic Reference maintained by an Authority.
 
@@ -91,7 +121,9 @@ Resolution should therefore be understood as contextual:
 
 > Reference + Authority + Context → Artifact
 
-## Provenance
+---
+
+### §12. Provenance
 
 **Provenance** describes the known origin and history of a Knowledge Artifact.
 
@@ -106,7 +138,9 @@ Provenance may identify:
 
 Provenance is expressed through verifiable claims. It need not be complete for an Artifact to exist, but missing or uncertain provenance must not be represented as known.
 
-## Claim
+---
+
+### §13. Claim
 
 A **Claim** is an assertion made by an Identity about an Artifact, another Identity, or a relationship between them.
 
@@ -116,7 +150,9 @@ A Claim records what an Identity asserts. It does not independently establish th
 
 Claims are themselves Knowledge Artifacts and are therefore immutable, identifiable, and capable of carrying their own provenance.
 
-## Attestation
+---
+
+### §14. Attestation
 
 An **Attestation** is a signed Claim through which an Identity accepts responsibility for an assertion.
 
@@ -130,7 +166,9 @@ An Attestation binds:
 
 An Attestation may later be superseded, disputed, or revoked, but it cannot be retroactively altered.
 
-## Revocation
+---
+
+### §15. Revocation
 
 A **Revocation** is an Artifact declaring that an Identity no longer stands behind a previous Attestation or Authoritative Reference.
 
@@ -138,7 +176,9 @@ Revocation does not erase the original assertion or make it cease to have existe
 
 History accumulates; it is not rewritten.
 
-## Relationship
+---
+
+### §16. Relationship
 
 A **Relationship** is a typed association between two or more Knowledge Artifacts.
 
@@ -153,7 +193,9 @@ A Relationship:
 
 Relationships do not modify their participants. Conflicting, superseding, or additional Relationships accumulate as further Knowledge.
 
-## Composition
+---
+
+### §17. Composition
 
 A **Composition** is a Knowledge Artifact whose meaning or function depends upon an explicitly identified set of constituent Artifacts.
 
@@ -167,3 +209,21 @@ A Composition identifies:
 Composition does not merge or mutate its constituents. Each constituent retains its own identity, provenance, and lineage.
 
 Because a Composition refers to immutable Artifacts, it describes a reproducible state. A changed constituent or structure produces a new Composition with its own identity and lineage.
+
+---
+
+### §18. Invariants
+
+Every Knowledge domain **SHALL** preserve the following invariants:
+
+- Knowledge remains independent of encoding, storage, transport, and provider.
+- Every Knowledge Artifact possesses a stable identity.
+- A Knowledge Artifact is immutable; changed Knowledge produces a new Artifact.
+- Representations **SHALL NOT** redefine the identity of the Artifact they express.
+- Revisions and Derived Artifacts **SHALL** preserve their known lineage.
+- References **SHALL NOT**, by themselves, imply ownership, endorsement, truth, or authority.
+- Authority remains explicit and contextual.
+- Claims and Attestations **SHALL** retain their provenance.
+- Revocation **SHALL NOT** erase the assertion or Attestation that preceded it.
+- Relationships and Compositions **SHALL NOT** mutate their constituent Artifacts.
+- Missing or uncertain provenance **SHALL NOT** be represented as known.

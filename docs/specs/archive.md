@@ -1,6 +1,6 @@
 # Constitutional Article — Archive
 
-## Article III — Archive
+## Article IV — Archive
 
 ### §1. Definition
 
@@ -14,9 +14,9 @@ The Archive exists to ensure continuity of identity, accountability, and institu
 
 ### §2. Purpose
 
-Every Institution **SHALL** maintain an Archive.
+Every Campus **SHALL** maintain an Archive.
 
-The purpose of the Archive is to preserve an accurate and discoverable record of constitutional and operational history.
+The purpose of the Archive is to preserve an accurate and discoverable record of constitutional and operational history for the Campus and the Institutions within its hierarchy.
 
 The Archive exists to enable understanding, accountability, continuity, and lawful succession.
 

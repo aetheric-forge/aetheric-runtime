@@ -6,8 +6,6 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{3A0D0869-E172-4117-999E-726CCECA4370}"
 	ProjectSection(SolutionItems) = preProject
 		..\README.md = ..\README.md
-		..\docs\CHANGELOG.md = ..\docs\CHANGELOG.md
-		..\docs\architecture.md = ..\docs\architecture.md
 		..\LICENSE.md = ..\LICENSE.md
 		..\CONTRIBUTOR-LICENSE-AGREEMENT.md = ..\CONTRIBUTOR-LICENSE-AGREEMENT.md
 	EndProjectSection
@@ -28,15 +26,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Model
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Specifications", "Specifications", "{16AE0D59-AE43-43BD-8065-D7DE4AFF7CFD}"
 	ProjectSection(SolutionItems) = preProject
-		..\docs\Specifications\Identity.md = ..\docs\Specifications\Identity.md
-		..\docs\Specifications\Institution.md = ..\docs\Specifications\Institution.md
-		..\docs\Specifications\Knowledge.md = ..\docs\Specifications\Knowledge.md
-		..\docs\Specifications\Preamble.md = ..\docs\Specifications\Preamble.md
-		..\docs\Specifications\Post.md = ..\docs\Specifications\Post.md
-		..\docs\Specifications\Archive.md = ..\docs\Specifications\Archive.md
-		..\docs\Specifications\Campus.md = ..\docs\Specifications\Campus.md
-		..\docs\Specifications\Registrar.md = ..\docs\Specifications\Registrar.md
-		..\docs\Specifications\Library.md = ..\docs\Specifications\Library.md
+		..\docs\specs\archive.md = ..\docs\specs\archive.md
+		..\docs\specs\campus.md = ..\docs\specs\campus.md
+		..\docs\specs\identity.md = ..\docs\specs\identity.md
+		..\docs\specs\institution.md = ..\docs\specs\institution.md
+		..\docs\specs\knowledge.md = ..\docs\specs\knowledge.md
+		..\docs\specs\library.md = ..\docs\specs\library.md
+		..\docs\specs\post.md = ..\docs\specs\post.md
+		..\docs\specs\preamble.md = ..\docs\specs\preamble.md
+		..\docs\specs\registrar.md = ..\docs\specs\registrar.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Providers", "Providers", "{EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}"
@@ -86,6 +84,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Institutions.Registrar", "Institutions\AethericForge.Runtime.Institutions.Registrar\AethericForge.Runtime.Institutions.Registrar.csproj", "{450CECF1-BC74-4976-9803-543C01130CDD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Institutions.Library", "Institutions\AethericForge.Runtime.Institutions.Library\AethericForge.Runtime.Institutions.Library.csproj", "{EF142468-678A-4493-9C68-388DFBA6CF81}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Architecture", "Architecture", "{EBFE318D-50E7-499E-B05B-2697B2E5A16C}"
+	ProjectSection(SolutionItems) = preProject
+		..\docs\architecture\overview.md = ..\docs\architecture\overview.md
+		..\docs\architecture\institutional-model.md = ..\docs\architecture\institutional-model.md
+		..\docs\architecture\infrastructure.md = ..\docs\architecture\infrastructure.md
+		..\docs\architecture\runtime-model.md = ..\docs\architecture\runtime-model.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -368,5 +374,6 @@ Global
 		{1374D613-49C7-4A39-923C-928A94CFC281} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
 		{450CECF1-BC74-4976-9803-543C01130CDD} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
 		{EF142468-678A-4493-9C68-388DFBA6CF81} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
+		{EBFE318D-50E7-499E-B05B-2697B2E5A16C} = {3A0D0869-E172-4117-999E-726CCECA4370}
 	EndGlobalSection
 EndGlobal
