@@ -7,19 +7,29 @@ using AethericForge.Runtime.Institutions.Abstractions.Primitives;
 
 namespace AethericForge.Runtime.Models.Institutions;
 
-public abstract class InstitutionBase : IInstitution
+public abstract class InstitutionBase(IInstitutionContext context) : IInstitution
 {
-    private readonly Dictionary<Type, IInstitution> _institutions = new();    
-    
-    protected InstitutionBase(IInstitutionContext context)
-    {
-        Context = context ?? throw new ArgumentNullException(nameof(context));
-    }
+    private readonly Dictionary<Type, IInstitution> _institutions = new();
 
-    public IInstitutionContext Context { get; }
+    public IInstitutionContext Context { get; } = context ?? throw new ArgumentNullException(nameof(context));
+
     public void Register<TInstitution>(TInstitution institution) where TInstitution : class, IInstitution
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(institution);
+
+        if (!ReferenceEquals(institution.Context.Parent, this))
+        {
+            throw new ArgumentException(
+                "The registered institution must belong to this institutional scope.",
+                nameof(institution));
+        }
+
+        if (!_institutions.TryAdd(typeof(TInstitution), institution))
+        {
+            throw new InvalidOperationException(
+                $"An institution is already registered for capability " +
+                $"'{typeof(TInstitution).FullName}' in this institutional scope.");
+        }
     }
 
     public bool TryResolve<TInstitution>(
@@ -73,16 +83,10 @@ public abstract class InstitutionBase : IInstitution
     }
 }
 
-public class InstitutionContext : IInstitutionContext
+public class InstitutionContext(IInstitutionTemplate template, IServiceProvider services, IInstitution? parent = null)
+    : IInstitutionContext
 {
-    public InstitutionContext(IInstitutionTemplate template, IServiceProvider services, IInstitution? parent = null)
-    {
-        Template = template ?? throw new ArgumentNullException(nameof(template));
-        Services = services ?? throw new ArgumentNullException(nameof(services));
-        Parent = parent;
-    }
-
-    public IInstitution? Parent { get; }
-    public IInstitutionTemplate Template { get; }
-    public IServiceProvider Services { get; }
+    public IInstitution? Parent { get; } = parent;
+    public IInstitutionTemplate Template { get; } = template ?? throw new ArgumentNullException(nameof(template));
+    public IServiceProvider Services { get; } = services ?? throw new ArgumentNullException(nameof(services));
 }
