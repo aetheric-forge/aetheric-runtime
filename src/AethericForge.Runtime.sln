@@ -34,6 +34,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Specifications", "Specifica
 		..\docs\Specifications\Post.md = ..\docs\Specifications\Post.md
 		..\docs\Specifications\Archive.md = ..\docs\Specifications\Archive.md
 		..\docs\Specifications\Campus.md = ..\docs\Specifications\Campus.md
+		..\docs\Specifications\Registrar.md = ..\docs\Specifications\Registrar.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Providers", "Providers", "{EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}"
@@ -81,6 +82,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Institutions.Archive", "Institutions\AethericForge.Runtime.Institutions.Archive\AethericForge.Runtime.Institutions.Archive.csproj", "{1374D613-49C7-4A39-923C-928A94CFC281}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Institutions.Registrar", "Institutions\AethericForge.Runtime.Institutions.Registrar\AethericForge.Runtime.Institutions.Registrar.csproj", "{450CECF1-BC74-4976-9803-543C01130CDD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Institutions.Library", "Institutions\AethericForge.Runtime.Institutions.Library\AethericForge.Runtime.Institutions.Library.csproj", "{EF142468-678A-4493-9C68-388DFBA6CF81}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -320,6 +323,18 @@ Global
 		{450CECF1-BC74-4976-9803-543C01130CDD}.Release|x64.Build.0 = Release|Any CPU
 		{450CECF1-BC74-4976-9803-543C01130CDD}.Release|x86.ActiveCfg = Release|Any CPU
 		{450CECF1-BC74-4976-9803-543C01130CDD}.Release|x86.Build.0 = Release|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Debug|x64.Build.0 = Debug|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Debug|x86.Build.0 = Debug|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Release|x64.ActiveCfg = Release|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Release|x64.Build.0 = Release|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Release|x86.ActiveCfg = Release|Any CPU
+		{EF142468-678A-4493-9C68-388DFBA6CF81}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -350,5 +365,6 @@ Global
 		{D8B5269F-93F0-47C3-AED3-F30CDF93BF05} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
 		{1374D613-49C7-4A39-923C-928A94CFC281} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
 		{450CECF1-BC74-4976-9803-543C01130CDD} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
+		{EF142468-678A-4493-9C68-388DFBA6CF81} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
 	EndGlobalSection
 EndGlobal
