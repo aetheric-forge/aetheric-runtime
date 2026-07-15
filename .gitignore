@@ -224,5 +224,4 @@ qodana.yaml
 .codex/
 .agents/
 
-/src/.junie/plans/implement-template-institution.md
-/src/.junie/plans/implement-archive-institution.md
+.junie/
