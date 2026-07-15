@@ -5,10 +5,11 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{3A0D0869-E172-4117-999E-726CCECA4370}"
 	ProjectSection(SolutionItems) = preProject
-		..\docs\LICENSE.md = ..\docs\LICENSE.md
 		..\README.md = ..\README.md
 		..\docs\CHANGELOG.md = ..\docs\CHANGELOG.md
 		..\docs\architecture.md = ..\docs\architecture.md
+		..\LICENSE.md = ..\LICENSE.md
+		..\CONTRIBUTOR-LICENSE-AGREEMENT.md = ..\CONTRIBUTOR-LICENSE-AGREEMENT.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{AD4CDE37-D154-4F43-8EF2-999176F24C08}"
@@ -35,6 +36,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Specifications", "Specifica
 		..\docs\Specifications\Archive.md = ..\docs\Specifications\Archive.md
 		..\docs\Specifications\Campus.md = ..\docs\Specifications\Campus.md
 		..\docs\Specifications\Registrar.md = ..\docs\Specifications\Registrar.md
+		..\docs\Specifications\Library.md = ..\docs\Specifications\Library.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Providers", "Providers", "{EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}"

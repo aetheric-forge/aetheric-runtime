@@ -4,7 +4,7 @@ using AethericForge.Runtime.Abstractions.Interfaces.Staging.Providers;
 using AethericForge.Runtime.Models.Staging;
 using AethericForge.Runtime.Services.Staging;
 
-namespace AethericForge.Runtime.Tests;
+namespace AethericForge.Runtime.Tests.Staging;
 
 public class StagingTests
 {

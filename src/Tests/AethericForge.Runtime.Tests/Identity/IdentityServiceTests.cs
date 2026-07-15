@@ -7,9 +7,8 @@ using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 using AethericForge.Runtime.Models.Identity.Primitives;
 using AethericForge.Runtime.Services.Identity;
 using AethericForge.Runtime.Services.Identity.Lifecycle;
-using Xunit;
 
-namespace AethericForge.Runtime.Tests;
+namespace AethericForge.Runtime.Tests.Identity;
 
 public class IdentityServiceTests
 {
