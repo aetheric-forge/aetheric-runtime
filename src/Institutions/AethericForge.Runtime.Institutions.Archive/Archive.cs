@@ -16,7 +16,7 @@ public sealed class Archive(
     private readonly IArchiveVault _vault =
         vault ?? throw new ArgumentNullException(nameof(vault));
 
-    public override IArchivist Archivist { get; } =
+    public IArchivist Archivist { get; } =
         archivist ?? throw new ArgumentNullException(nameof(archivist));
 
     public new IArchiveContext Context { get; } =

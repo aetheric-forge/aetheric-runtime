@@ -80,6 +80,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Insti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Institutions.Archive", "Institutions\AethericForge.Runtime.Institutions.Archive\AethericForge.Runtime.Institutions.Archive.csproj", "{1374D613-49C7-4A39-923C-928A94CFC281}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Institutions.Registrar", "Institutions\AethericForge.Runtime.Institutions.Registrar\AethericForge.Runtime.Institutions.Registrar.csproj", "{450CECF1-BC74-4976-9803-543C01130CDD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -306,6 +308,18 @@ Global
 		{1374D613-49C7-4A39-923C-928A94CFC281}.Release|x64.Build.0 = Release|Any CPU
 		{1374D613-49C7-4A39-923C-928A94CFC281}.Release|x86.ActiveCfg = Release|Any CPU
 		{1374D613-49C7-4A39-923C-928A94CFC281}.Release|x86.Build.0 = Release|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Debug|x64.Build.0 = Debug|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Debug|x86.Build.0 = Debug|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Release|x64.ActiveCfg = Release|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Release|x64.Build.0 = Release|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Release|x86.ActiveCfg = Release|Any CPU
+		{450CECF1-BC74-4976-9803-543C01130CDD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -335,5 +349,6 @@ Global
 		{63EAC7DE-6DC5-4046-9F06-713BFAC0FCA4} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
 		{D8B5269F-93F0-47C3-AED3-F30CDF93BF05} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
 		{1374D613-49C7-4A39-923C-928A94CFC281} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
+		{450CECF1-BC74-4976-9803-543C01130CDD} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
 	EndGlobalSection
 EndGlobal

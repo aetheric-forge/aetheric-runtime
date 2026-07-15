@@ -13,9 +13,9 @@ public sealed class PostOffice(
     private readonly IPostExchange _exchange =
         exchange ?? throw new ArgumentNullException(nameof(exchange));
 
-    public override IPostmaster Postmaster { get; } =
+    public IPostmaster Postmaster { get; } =
         postmaster ?? throw new ArgumentNullException(nameof(postmaster));
-
+    
     public new IPostOfficeContext Context { get; } =
         context ?? throw new ArgumentNullException(nameof(context));
 
