@@ -1,18 +1,15 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Authentication;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Provisioning;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Services;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
-using AethericForge.Runtime.Models.Institutions;
 
-namespace AethericForge.Runtime.Institutions.Registrar;
+namespace AethericForge.Runtime.Institutions.Registry;
 
-public sealed class Registrar(IRegistrarContext context, IIdentityService identityService) 
-    : InstitutionBase(context), IRegistrar
+public sealed class IdentityRegistry(IIdentityService identityService) : IIdentityRegistry
 {
     private readonly IIdentityService _identityService = 
         identityService ?? throw new ArgumentNullException(nameof(identityService));
-
-    public new IRegistrarContext Context => (IRegistrarContext)base.Context;
 
     public Task<IPrincipalIdentity?> AuthenticateAsync(
         IdentityScheme scheme,

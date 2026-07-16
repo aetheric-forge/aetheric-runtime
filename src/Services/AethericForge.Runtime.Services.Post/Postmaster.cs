@@ -5,18 +5,12 @@ using AethericForge.Runtime.Institutions.PostOffice;
 
 namespace AethericForge.Runtime.Services.Post;
 
-public sealed class Postmaster : IPostmaster
+public sealed class Postmaster(
+    ITeam<IPostClerk> team,
+    IPostExchange exchange) : IPostmaster
 {
-    private readonly ITeam<IPostClerk> _team;
-    private readonly IPostExchange _exchange;
-
-    public Postmaster(
-        ITeam<IPostClerk> team,
-        IPostExchange exchange)
-    {
-        _team = team ?? throw new ArgumentNullException(nameof(team));
-        _exchange = exchange ?? throw new ArgumentNullException(nameof(exchange));
-    }
+    private readonly ITeam<IPostClerk> _team = team ?? throw new ArgumentNullException(nameof(team));
+    private readonly IPostExchange _exchange = exchange ?? throw new ArgumentNullException(nameof(exchange));
 
     public ITeam<IPostClerk> Team => _team;
 

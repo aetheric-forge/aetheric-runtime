@@ -1,22 +1,25 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Authentication;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
-using AethericForge.Runtime.Abstractions.Interfaces.Identity.Provisioning;
-using AethericForge.Runtime.Abstractions.Interfaces.Identity.Services;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
+using AethericForge.Runtime.Models.Institutions;
+using AethericForge.Runtime.Services.Registry;
 
-namespace AethericForge.Runtime.Institutions.Registrar;
+namespace AethericForge.Runtime.Institutions.Registry;
 
-public sealed class IdentityRegistrar(IIdentityService identityService) : IIdentityRegistrar
+public sealed class Registry(IRegistryContext context, IRegistryService registryService) 
+    : InstitutionBase(context), IRegistry
 {
-    private readonly IIdentityService _identityService = 
-        identityService ?? throw new ArgumentNullException(nameof(identityService));
+    private readonly IRegistryService _registryService = 
+        registryService ?? throw new ArgumentNullException(nameof(registryService));
+
+    public new IRegistryContext Context => (IRegistryContext)base.Context;
 
     public Task<IPrincipalIdentity?> AuthenticateAsync(
         IdentityScheme scheme,
         IReadOnlyDictionary<string, string> credentials,
         CancellationToken ct = default)
     {
-        return _identityService.AuthenticateAsync(scheme, credentials, ct);
+        return _registryService.AuthenticateAsync(scheme, credentials, ct);
     }
 
     public Task<IIdentitySubject?> ResolveSubjectAsync(
@@ -24,13 +27,13 @@ public sealed class IdentityRegistrar(IIdentityService identityService) : IIdent
         string subjectId,
         CancellationToken ct = default)
     {
-        return _identityService.ResolveSubjectAsync(scheme, subjectId, ct);
+        return _registryService.ResolveSubjectAsync(scheme, subjectId, ct);
     }
 
     public Task<IPrincipalIdentity?> ResolvePrincipalAsync(
         IIdentitySubject subject,
         CancellationToken ct = default)
     {
-        return _identityService.ResolvePrincipalAsync(subject, ct);
+        return _registryService.ResolvePrincipalAsync(subject, ct);
     }
 }
