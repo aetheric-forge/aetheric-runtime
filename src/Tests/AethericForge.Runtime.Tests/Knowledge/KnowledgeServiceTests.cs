@@ -1,9 +1,11 @@
+using AethericForge.Runtime.Abstractions.Interfaces.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Artifacts;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Providers;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Representations;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Services;
 using AethericForge.Runtime.Models.Knowledge.Artifacts;
 using AethericForge.Runtime.Models.Knowledge.Authorities;
 using AethericForge.Runtime.Models.Knowledge.Primitives;
@@ -26,12 +28,8 @@ public class KnowledgeServiceTests
         var identity = new Mock<IIdentitySubject>();
         var authority = new KnowledgeAuthority(identity.Object, "Global");
         var artifact = await provider.StoreArtifactAsync(descriptor, new List<IKnowledgeRepresentation>(), null, authority);
-        var reference = artifact.Reference;
-        
-        var service = new KnowledgeService(new[] { provider });
-
-        // Act
-        var result = await service.GetArtifactAsync(reference);
+        var service = new KnowledgeService(new[] { provider }, Mock.Of<ITeam<ICuratorClerk>>());
+        var result = await service.GetArtifactAsync(artifact.Reference);
 
         // Assert
         Assert.Equal(artifact.Reference, result.Reference);
@@ -47,7 +45,7 @@ public class KnowledgeServiceTests
         var authority = new KnowledgeAuthority(identity.Object, "Global");
 
         var provider = new InMemoryKnowledgeProvider("test-scheme");
-        var service = new KnowledgeService(new[] { provider });
+        var service = new KnowledgeService(new[] { provider }, Mock.Of<ITeam<ICuratorClerk>>());
 
         // Act
         var result = await service.PublishArtifactAsync(descriptor, representations, authority: authority);
@@ -72,7 +70,7 @@ public class KnowledgeServiceTests
         var authRef = new AuthoritativeReference("Primary", "Artifact", "Test", "latest", authority, "Current");
         await provider.SetAuthoritativeReferenceAsync(authRef, artifact.Reference);
 
-        var service = new KnowledgeService(new[] { provider });
+        var service = new KnowledgeService(new[] { provider }, Mock.Of<ITeam<ICuratorClerk>>());
 
         // Act
         var result = await service.ResolveReferenceAsync(authRef);
@@ -91,7 +89,7 @@ public class KnowledgeServiceTests
         var targetRef = new KnowledgeReference("Primary", "Artifact", "Test", "1.0.1");
 
         var provider = new InMemoryKnowledgeProvider("Primary");
-        var service = new KnowledgeService(new[] { provider });
+        var service = new KnowledgeService(new[] { provider }, Mock.Of<ITeam<ICuratorClerk>>());
 
         // Act
         await service.SetAuthoritativeReferenceAsync(authRef, targetRef);

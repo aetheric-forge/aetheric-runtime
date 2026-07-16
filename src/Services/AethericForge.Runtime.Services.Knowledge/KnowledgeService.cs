@@ -1,3 +1,4 @@
+using AethericForge.Runtime.Abstractions.Interfaces.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Artifacts;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
@@ -8,12 +9,13 @@ using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Services;
 
 namespace AethericForge.Runtime.Services.Knowledge;
 
-public sealed class KnowledgeService : IKnowledgeService
+public sealed class KnowledgeService : IKnowledgeService, ICurator
 {
     private readonly IReadOnlyDictionary<string, IKnowledgeProvider> _providers;
 
-    public KnowledgeService(IEnumerable<IKnowledgeProvider> providers)
+    public KnowledgeService(IEnumerable<IKnowledgeProvider> providers, ITeam<ICuratorClerk> team)
     {
+        Team = team;
         ArgumentNullException.ThrowIfNull(providers);
         _providers = providers.ToDictionary(p => p.Scheme, StringComparer.OrdinalIgnoreCase);
     }
@@ -80,4 +82,6 @@ public sealed class KnowledgeService : IKnowledgeService
             throw new InvalidOperationException($"No provider found for scheme '{reference.Scheme}'.");
         }
     }
+
+    public ITeam<ICuratorClerk> Team { get; }
 }

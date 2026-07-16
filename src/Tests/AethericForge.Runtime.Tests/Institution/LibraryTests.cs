@@ -1,7 +1,10 @@
+using AethericForge.Runtime.Abstractions.Interfaces.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Institutions;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Services;
+using AethericForge.Runtime.Abstractions.Interfaces.Library.Services;
 using AethericForge.Runtime.Institutions.Abstractions.Builders;
 using AethericForge.Runtime.Institutions.Library;
+using AethericForge.Runtime.Services.Library;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
@@ -14,7 +17,14 @@ public class LibraryTests : InstitutionTests<Library>
 
     protected override Library CreateInstitution(IInstitutionContext context)
     {
-        return new Library((ILibraryContext)context);
+        var librarian = new Librarian(
+            _knowledgeServiceMock.Object, 
+            Mock.Of<ITeam<ILibraryClerk>>());
+
+        return new Library(
+            (ILibraryContext)context, 
+            Mock.Of<ILibraryService>(), 
+            librarian);
     }
 
     protected override ILibraryContext CreateContext()

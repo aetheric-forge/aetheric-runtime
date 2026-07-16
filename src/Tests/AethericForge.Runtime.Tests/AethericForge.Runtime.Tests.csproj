@@ -42,5 +42,6 @@
     <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Campus\AethericForge.Runtime.Institutions.Campus.csproj" />
     <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.PostOffice\AethericForge.Runtime.Institutions.PostOffice.csproj" />
     <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Archive\AethericForge.Runtime.Institutions.Archive.csproj" />
+    <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Library\AethericForge.Runtime.Services.Library.csproj" />
   </ItemGroup>
 </Project>
