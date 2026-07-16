@@ -101,10 +101,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Provi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Providers.Staging.InMemory", "Providers\AethericForge.Runtime.Providers.Staging.InMemory\AethericForge.Runtime.Providers.Staging.InMemory.csproj", "{23EE0FC0-D89B-4A6C-875D-08FFE5695521}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Distribution", "Distribution", "{9972DAB8-671B-4DD7-8191-5053AFDAE0A9}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime", "AethericForge.Runtime\AethericForge.Runtime.csproj", "{B8214547-0E79-49B3-AB9B-4CEC22A267F4}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -403,18 +399,6 @@ Global
 		{23EE0FC0-D89B-4A6C-875D-08FFE5695521}.Release|x64.Build.0 = Release|Any CPU
 		{23EE0FC0-D89B-4A6C-875D-08FFE5695521}.Release|x86.ActiveCfg = Release|Any CPU
 		{23EE0FC0-D89B-4A6C-875D-08FFE5695521}.Release|x86.Build.0 = Release|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Debug|x64.Build.0 = Debug|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Debug|x86.Build.0 = Debug|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Release|x64.ActiveCfg = Release|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Release|x64.Build.0 = Release|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Release|x86.ActiveCfg = Release|Any CPU
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -451,6 +435,5 @@ Global
 		{9A65A8D3-B5B2-471A-B21C-CA754EF924C7} = {EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}
 		{1816ED6F-BF83-47FF-8B7A-2B9910FDECBB} = {EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}
 		{23EE0FC0-D89B-4A6C-875D-08FFE5695521} = {EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}
-		{B8214547-0E79-49B3-AB9B-4CEC22A267F4} = {9972DAB8-671B-4DD7-8191-5053AFDAE0A9}
 	EndGlobalSection
 EndGlobal
