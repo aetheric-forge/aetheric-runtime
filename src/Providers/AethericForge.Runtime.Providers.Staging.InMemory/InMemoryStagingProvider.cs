@@ -85,7 +85,12 @@ public sealed class InMemoryStagingProvider : IStagingProvider
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(reference);
-        EnsureOwns(reference);
+        
+        if (!string.Equals(Stage, reference.Stage, StringComparison.Ordinal))
+        {
+            return Task.FromResult(false);
+        }
+
         ct.ThrowIfCancellationRequested();
 
         lock (_sync)

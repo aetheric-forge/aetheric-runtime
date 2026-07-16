@@ -41,6 +41,19 @@ public sealed class InMemoryIdentityProvider : IIdentityProvider
         ArgumentNullException.ThrowIfNull(credentials);
         cancellationToken.ThrowIfCancellationRequested();
 
+        // Check for direct subjectId authentication (used for principal resolution)
+        if (credentials.TryGetValue("subjectId", out var subjectId))
+        {
+            lock (_sync)
+            {
+                if (_subjects.TryGetValue(subjectId, out var subject))
+                {
+                    return Task.FromResult<IPrincipalIdentity?>(new PrincipalIdentity(subject, true));
+                }
+            }
+            return Task.FromResult<IPrincipalIdentity?>(null);
+        }
+
         // Simple username/password authentication for the in-memory provider
         if (!credentials.TryGetValue("username", out var username) ||
             !credentials.TryGetValue("password", out var password))

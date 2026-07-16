@@ -16,7 +16,7 @@ public class KnowledgeModelTests
     public void KnowledgeClaim_ShouldInitializeCorrectly()
     {
         // Arrange
-        var reference = new KnowledgeReference("Set", "Kind", "Name", "1.0");
+        var reference = new KnowledgeReference("Scheme", "Kind", "Name", "1.0");
         var descriptor = new KnowledgeDescriptor("Title");
         var asserter = new Mock<IIdentitySubject>().Object;
         var subject = new Mock<IKnowledgeObject>().Object;
@@ -36,9 +36,9 @@ public class KnowledgeModelTests
     public void KnowledgeRelationship_ShouldInitializeCorrectly()
     {
         // Arrange
-        var reference = new KnowledgeReference("Set", "Kind", "Name", "1.0");
+        var reference = new KnowledgeReference("Scheme", "Kind", "Name", "1.0");
         var descriptor = new KnowledgeDescriptor("Title");
-        var participants = new[] { new KnowledgeReference("Set", "Kind", "P1", "1.0") };
+        var participants = new[] { new KnowledgeReference("Scheme", "Kind", "P1", "1.0") };
         var relType = "Dependency";
 
         // Act
@@ -53,9 +53,9 @@ public class KnowledgeModelTests
     public void KnowledgeComposition_ShouldInitializeCorrectly()
     {
         // Arrange
-        var reference = new KnowledgeReference("Set", "Kind", "Name", "1.0");
+        var reference = new KnowledgeReference("Scheme", "Kind", "Name", "1.0");
         var descriptor = new KnowledgeDescriptor("Title");
-        var constituents = new[] { new KnowledgeConstituent(new KnowledgeReference("Set", "Kind", "C1", "1.0"), "Main") };
+        var constituents = new[] { new KnowledgeConstituent(new KnowledgeReference("Scheme", "Kind", "C1", "1.0"), "Main") };
 
         // Act
         var comp = new KnowledgeComposition(reference, descriptor, constituents);

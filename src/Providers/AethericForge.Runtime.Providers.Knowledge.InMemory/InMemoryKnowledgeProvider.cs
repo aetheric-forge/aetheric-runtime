@@ -49,7 +49,7 @@ public sealed class InMemoryKnowledgeProvider : IKnowledgeProvider
 
         // In-memory provider creates a reference based on the scheme and a new GUID for Name
         var reference = new KnowledgeReference(
-            set: Scheme,
+            scheme: Scheme,
             kind: "Artifact",
             name: Guid.NewGuid().ToString("N"),
             version: "1.0.0");
@@ -104,7 +104,7 @@ public sealed class InMemoryKnowledgeProvider : IKnowledgeProvider
 
     private static string GetKey(IKnowledgeReference reference)
     {
-        return $"{reference.Set}:{reference.Kind}/{reference.Name}@{reference.Version}.{reference.Revision}";
+        return $"{reference.Scheme}:{reference.Kind}/{reference.Name}@{reference.Version}.{reference.Revision}";
     }
 
     private static string NormalizeRequired(string value, string parameterName)

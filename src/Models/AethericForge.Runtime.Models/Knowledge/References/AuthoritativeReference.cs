@@ -6,7 +6,7 @@ namespace AethericForge.Runtime.Models.Knowledge.References;
 public sealed record AuthoritativeReference : IAuthoritativeReference
 {
     public AuthoritativeReference(
-        string set,
+        string scheme,
         string kind,
         string name,
         string version,
@@ -16,7 +16,7 @@ public sealed record AuthoritativeReference : IAuthoritativeReference
         string? contentHash = null,
         string? signature = null)
     {
-        Set = set ?? throw new ArgumentNullException(nameof(set));
+        Scheme = scheme ?? throw new ArgumentNullException(nameof(scheme));
         Kind = kind ?? throw new ArgumentNullException(nameof(kind));
         Name = name ?? throw new ArgumentNullException(nameof(name));
         Version = version ?? throw new ArgumentNullException(nameof(version));
@@ -27,7 +27,7 @@ public sealed record AuthoritativeReference : IAuthoritativeReference
         Signature = signature;
     }
 
-    public string Set { get; init; }
+    public string Scheme { get; init; }
     public string Kind { get; init; }
     public string Name { get; init; }
     public string Version { get; init; }
@@ -37,5 +37,5 @@ public sealed record AuthoritativeReference : IAuthoritativeReference
     public string Role { get; init; }
     public string? Signature { get; init; }
 
-    public override string ToString() => $"{Authority.Identity.SubjectId}@{Set}:{Kind}/{Name}#{Role}";
+    public override string ToString() => $"{Authority.Identity.SubjectId}@{Scheme}:{Kind}/{Name}#{Role}";
 }

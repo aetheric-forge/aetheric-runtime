@@ -22,7 +22,7 @@ public sealed class KnowledgeService : IKnowledgeService
     {
         ArgumentNullException.ThrowIfNull(reference);
 
-        if (_providers.TryGetValue(reference.Set, out var provider))
+        if (_providers.TryGetValue(reference.Scheme, out var provider))
         {
             return await provider.GetArtifactAsync(reference, cancellationToken);
         }
@@ -50,7 +50,7 @@ public sealed class KnowledgeService : IKnowledgeService
     {
         if (reference is IAuthoritativeReference authRef)
         {
-            if (_providers.TryGetValue(authRef.Set, out var provider))
+            if (_providers.TryGetValue(authRef.Scheme, out var provider))
             {
                 var resolvedReference = await provider.ResolveAuthoritativeReferenceAsync(authRef, cancellationToken);
                 if (resolvedReference != null)
@@ -71,13 +71,13 @@ public sealed class KnowledgeService : IKnowledgeService
         ArgumentNullException.ThrowIfNull(reference);
         ArgumentNullException.ThrowIfNull(target);
 
-        if (_providers.TryGetValue(reference.Set, out var provider))
+        if (_providers.TryGetValue(reference.Scheme, out var provider))
         {
             await provider.SetAuthoritativeReferenceAsync(reference, target, cancellationToken);
         }
         else
         {
-            throw new InvalidOperationException($"No provider found for scheme '{reference.Set}'.");
+            throw new InvalidOperationException($"No provider found for scheme '{reference.Scheme}'.");
         }
     }
 }
