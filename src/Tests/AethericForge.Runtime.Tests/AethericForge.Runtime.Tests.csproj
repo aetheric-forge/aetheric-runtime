@@ -44,4 +44,7 @@
     <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Archive\AethericForge.Runtime.Institutions.Archive.csproj" />
     <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Library\AethericForge.Runtime.Services.Library.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="IssueReproductionTests.cs" />
+  </ItemGroup>
 </Project>

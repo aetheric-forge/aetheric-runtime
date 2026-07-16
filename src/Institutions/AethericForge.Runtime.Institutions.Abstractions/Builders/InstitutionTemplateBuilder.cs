@@ -1,11 +1,13 @@
 using AethericForge.Runtime.Institutions.Abstractions.Models;
 using AethericForge.Runtime.Institutions.Abstractions.Primitives;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AethericForge.Runtime.Institutions.Abstractions.Builders;
 
 public sealed class InstitutionTemplateBuilder
 {
     private readonly IInstitutionBuilder _builder;
+    private readonly List<ServiceDescriptor> _services = new();
 
     private InstitutionTemplateBuilder(IInstitutionBuilder builder)
     {
@@ -15,6 +17,22 @@ public sealed class InstitutionTemplateBuilder
     public static InstitutionTemplateBuilder Create()
     {
         return new InstitutionTemplateBuilder(new InstitutionBuilder());
+    }
+
+    public IEnumerable<ServiceDescriptor> Services => _services;
+
+    public InstitutionTemplateBuilder With<TService, TImplementation>()
+        where TService : class
+        where TImplementation : class, TService
+    {
+        _services.Add(ServiceDescriptor.Singleton<TService, TImplementation>());
+        return this;
+    }
+    
+    public InstitutionTemplateBuilder With<TService>(Func<IServiceProvider, TService> implementationFactory) where TService : class
+    {
+        _services.Add(ServiceDescriptor.Singleton(implementationFactory));
+        return this;
     }
 
     public InstitutionTemplateBuilder WithDescriptor(InstitutionDescriptor descriptor)
