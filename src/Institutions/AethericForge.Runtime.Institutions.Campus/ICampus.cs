@@ -1,7 +1,8 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Institutions;
 using AethericForge.Runtime.Institutions.Archive;
+using AethericForge.Runtime.Institutions.Library;
 using AethericForge.Runtime.Institutions.PostOffice;
-using AethericForge.Runtime.Institutions.Registrar;
+using AethericForge.Runtime.Institutions.Registry;
 
 namespace AethericForge.Runtime.Institutions.Campus;
 
@@ -11,5 +12,7 @@ public interface ICampus : IInstitution
 
     IPostOffice PostOffice { get; }
 
-    IRegistrar Registrar { get; }
+    IRegistry Registry { get; }
+    
+    ILibrary Library { get; }
 }

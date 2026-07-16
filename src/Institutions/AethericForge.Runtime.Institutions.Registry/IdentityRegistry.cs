@@ -4,9 +4,9 @@ using AethericForge.Runtime.Abstractions.Interfaces.Identity.Provisioning;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Services;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 
-namespace AethericForge.Runtime.Institutions.Registrar;
+namespace AethericForge.Runtime.Institutions.Registry;
 
-public sealed class IdentityRegistrar(IIdentityService identityService) : IIdentityRegistrar
+public sealed class IdentityRegistry(IIdentityService identityService) : IIdentityRegistry
 {
     private readonly IIdentityService _identityService = 
         identityService ?? throw new ArgumentNullException(nameof(identityService));

@@ -3,12 +3,12 @@ using AethericForge.Runtime.Abstractions.Interfaces.Identity.Authentication;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 
-namespace AethericForge.Runtime.Institutions.Registrar;
+namespace AethericForge.Runtime.Institutions.Registry;
 
 /// <summary>
 /// Represents an Institution that manages identities and authentication.
 /// </summary>
-public interface IRegistrar : IInstitution
+public interface IRegistry : IInstitution
 {
     Task<IPrincipalIdentity?> AuthenticateAsync(
         IdentityScheme scheme,

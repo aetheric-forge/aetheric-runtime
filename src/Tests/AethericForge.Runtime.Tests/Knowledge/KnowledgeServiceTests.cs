@@ -1,13 +1,16 @@
+using AethericForge.Runtime.Abstractions.Interfaces.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Artifacts;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Providers;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Representations;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Services;
 using AethericForge.Runtime.Models.Knowledge.Artifacts;
 using AethericForge.Runtime.Models.Knowledge.Authorities;
 using AethericForge.Runtime.Models.Knowledge.Primitives;
 using AethericForge.Runtime.Models.Knowledge.References;
+using AethericForge.Runtime.Providers.Knowledge.InMemory;
 using AethericForge.Runtime.Services.Knowledge;
 using Xunit;
 using Moq;
@@ -20,21 +23,16 @@ public class KnowledgeServiceTests
     public async Task GetArtifactAsync_ReturnsArtifact_FromCorrectProvider()
     {
         // Arrange
-        var reference = new KnowledgeReference("Primary", "Artifact", "Test", "1.0");
-        var artifact = new Mock<IKnowledgeArtifact>().Object;
-        
-        var provider = new Mock<IKnowledgeProvider>();
-        provider.Setup(p => p.Scheme).Returns("Primary");
-        provider.Setup(p => p.GetArtifactAsync(reference, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(artifact);
-
-        var service = new KnowledgeService(new[] { provider.Object });
-
-        // Act
-        var result = await service.GetArtifactAsync(reference);
+        var provider = new InMemoryKnowledgeProvider("Primary");
+        var descriptor = new KnowledgeDescriptor("Title");
+        var identity = new Mock<IIdentitySubject>();
+        var authority = new KnowledgeAuthority(identity.Object, "Global");
+        var artifact = await provider.StoreArtifactAsync(descriptor, new List<IKnowledgeRepresentation>(), null, authority);
+        var service = new KnowledgeService(new[] { provider }, Mock.Of<ITeam<ICuratorClerk>>());
+        var result = await service.GetArtifactAsync(artifact.Reference);
 
         // Assert
-        Assert.Same(artifact, result);
+        Assert.Equal(artifact.Reference, result.Reference);
     }
 
     [Fact]
@@ -43,22 +41,18 @@ public class KnowledgeServiceTests
         // Arrange
         var descriptor = new KnowledgeDescriptor("Title");
         var representations = new List<IKnowledgeRepresentation>();
-        var artifact = new Mock<IKnowledgeArtifact>().Object;
         var identity = new Mock<IIdentitySubject>();
         var authority = new KnowledgeAuthority(identity.Object, "Global");
 
-        var provider = new Mock<IKnowledgeProvider>();
-        provider.Setup(p => p.Scheme).Returns("Primary");
-        provider.Setup(p => p.StoreArtifactAsync(descriptor, representations, null, authority, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(artifact);
-
-        var service = new KnowledgeService(new[] { provider.Object });
+        var provider = new InMemoryKnowledgeProvider("test-scheme");
+        var service = new KnowledgeService(new[] { provider }, Mock.Of<ITeam<ICuratorClerk>>());
 
         // Act
         var result = await service.PublishArtifactAsync(descriptor, representations, authority: authority);
 
         // Assert
-        Assert.Same(artifact, result);
+        Assert.NotNull(result);
+        Assert.Equal("test-scheme", result.Reference.Scheme);
     }
 
     [Fact]
@@ -69,24 +63,20 @@ public class KnowledgeServiceTests
         identity.Setup(i => i.SubjectId).Returns("Author1");
         var authority = new KnowledgeAuthority(identity.Object, "Global");
         
+        var provider = new InMemoryKnowledgeProvider("Primary");
+        var descriptor = new KnowledgeDescriptor("Test");
+        var artifact = await provider.StoreArtifactAsync(descriptor, new List<IKnowledgeRepresentation>(), null, authority);
+        
         var authRef = new AuthoritativeReference("Primary", "Artifact", "Test", "latest", authority, "Current");
-        var fixedRef = new KnowledgeReference("Primary", "Artifact", "Test", "1.0.1");
-        var artifact = new Mock<IKnowledgeArtifact>().Object;
+        await provider.SetAuthoritativeReferenceAsync(authRef, artifact.Reference);
 
-        var provider = new Mock<IKnowledgeProvider>();
-        provider.Setup(p => p.Scheme).Returns("Primary");
-        provider.Setup(p => p.ResolveAuthoritativeReferenceAsync(authRef, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(fixedRef);
-        provider.Setup(p => p.GetArtifactAsync(fixedRef, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(artifact);
-
-        var service = new KnowledgeService(new[] { provider.Object });
+        var service = new KnowledgeService(new[] { provider }, Mock.Of<ITeam<ICuratorClerk>>());
 
         // Act
         var result = await service.ResolveReferenceAsync(authRef);
 
         // Assert
-        Assert.Same(artifact, result);
+        Assert.Equal(artifact.Reference, result.Reference);
     }
 
     [Fact]
@@ -98,15 +88,14 @@ public class KnowledgeServiceTests
         var authRef = new AuthoritativeReference("Primary", "Artifact", "Test", "latest", authority, "Current");
         var targetRef = new KnowledgeReference("Primary", "Artifact", "Test", "1.0.1");
 
-        var provider = new Mock<IKnowledgeProvider>();
-        provider.Setup(p => p.Scheme).Returns("Primary");
-
-        var service = new KnowledgeService(new[] { provider.Object });
+        var provider = new InMemoryKnowledgeProvider("Primary");
+        var service = new KnowledgeService(new[] { provider }, Mock.Of<ITeam<ICuratorClerk>>());
 
         // Act
         await service.SetAuthoritativeReferenceAsync(authRef, targetRef);
 
         // Assert
-        provider.Verify(p => p.SetAuthoritativeReferenceAsync(authRef, targetRef, It.IsAny<CancellationToken>()), Times.Once);
+        var resolved = await provider.ResolveAuthoritativeReferenceAsync(authRef);
+        Assert.Equal(targetRef, resolved);
     }
 }

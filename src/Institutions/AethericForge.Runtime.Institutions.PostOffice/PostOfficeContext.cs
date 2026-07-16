@@ -7,7 +7,7 @@ namespace AethericForge.Runtime.Institutions.PostOffice;
 public sealed class PostOfficeContext(
     IInstitutionTemplate template,
     IServiceProvider services,
-    IInstitution parent)
+    IInstitution? parent = null)
     : InstitutionContext(template, services, parent), IPostOfficeContext
 {
 }

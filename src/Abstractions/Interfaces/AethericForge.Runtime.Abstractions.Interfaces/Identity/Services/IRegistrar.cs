@@ -7,7 +7,7 @@ namespace AethericForge.Runtime.Abstractions.Interfaces.Identity.Services;
 /// <summary>
 /// Provides identity and authentication services.
 /// </summary>
-public interface IIdentityRegistrar
+public interface IRegistrar
 {
     Task<IPrincipalIdentity?> AuthenticateAsync(
         IdentityScheme scheme,

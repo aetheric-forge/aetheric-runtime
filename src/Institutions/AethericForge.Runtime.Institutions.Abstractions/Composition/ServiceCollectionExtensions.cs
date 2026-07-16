@@ -15,6 +15,12 @@ public static class ServiceCollectionExtensions
         var template = builder.Build();
         
         services.AddSingleton(template);
+        
+        foreach (var descriptor in builder.Services)
+        {
+            services.Add(descriptor);
+        }
+        
         return services;
     }
 }

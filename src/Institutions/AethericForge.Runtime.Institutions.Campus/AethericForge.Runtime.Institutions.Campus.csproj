@@ -11,8 +11,10 @@
       <ProjectReference Include="..\..\Abstractions\Interfaces\AethericForge.Runtime.Abstractions.Interfaces\AethericForge.Runtime.Abstractions.Interfaces.csproj" />
       <ProjectReference Include="..\..\Models\AethericForge.Runtime.Models\AethericForge.Runtime.Models.csproj" />
       <ProjectReference Include="..\AethericForge.Runtime.Institutions.Archive\AethericForge.Runtime.Institutions.Archive.csproj" />
+      <ProjectReference Include="..\AethericForge.Runtime.Institutions.Library\AethericForge.Runtime.Institutions.Library.csproj" />
       <ProjectReference Include="..\AethericForge.Runtime.Institutions.PostOffice\AethericForge.Runtime.Institutions.PostOffice.csproj" />
       <ProjectReference Include="..\AethericForge.Runtime.Institutions.Registrar\AethericForge.Runtime.Institutions.Registrar.csproj" />
+      <ProjectReference Include="..\AethericForge.Runtime.Institutions.Registry\AethericForge.Runtime.Institutions.Registry.csproj" />
     </ItemGroup>
 
 </Project>

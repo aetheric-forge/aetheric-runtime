@@ -1,6 +1,7 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Archive.Providers;
 using AethericForge.Runtime.Models.Archive.Primitives;
+using AethericForge.Runtime.Providers.Archive.InMemory;
 using AethericForge.Runtime.Services.Archive;
 using Moq;
 using Xunit;
@@ -9,15 +10,14 @@ namespace AethericForge.Runtime.Tests.Archive;
 
 public class ArchiveServiceTests
 {
-    private readonly Mock<IArchiveProvider> _providerMock;
+    private readonly IArchiveProvider _provider;
     private readonly ArchiveService _service;
     private const string StoreName = "test-store";
 
     public ArchiveServiceTests()
     {
-        _providerMock = new Mock<IArchiveProvider>();
-        _providerMock.SetupGet(x => x.Store).Returns(StoreName);
-        _service = new ArchiveService(new[] { _providerMock.Object });
+        _provider = new InMemoryArchiveProvider(StoreName);
+        _service = new ArchiveService(new[] { _provider });
     }
 
     [Fact]
@@ -31,75 +31,79 @@ public class ArchiveServiceTests
     {
         // Arrange
         var key = "test-key";
-        using var stream = new MemoryStream();
-        var reference = new ArchiveReference(StoreName, key);
-        _providerMock.Setup(x => x.PutAsync(key, stream, It.IsAny<IArchiveMetadata>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(reference);
+        using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
 
         // Act
         var result = await _service.PutAsync(StoreName, key, stream);
 
         // Assert
-        Assert.Same(reference, result);
-        _providerMock.Verify(x => x.PutAsync(key, stream, It.IsAny<IArchiveMetadata>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(StoreName, result.Store);
+        Assert.Equal(key, result.Key);
+        
+        using var retrieved = await _provider.RetrieveAsync(result);
+        var bytes = new byte[3];
+        await retrieved.ReadExactlyAsync(bytes);
+        Assert.Equal(new byte[] { 1, 2, 3 }, bytes);
     }
 
     [Fact]
     public async Task RetrieveAsync_Calls_Correct_Provider()
     {
         // Arrange
-        var reference = new ArchiveReference(StoreName, "key");
-        using var stream = new MemoryStream();
-        _providerMock.Setup(x => x.RetrieveAsync(reference, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(stream);
+        var key = "key";
+        var content = new byte[] { 4, 5, 6 };
+        await _provider.PutAsync(key, new MemoryStream(content));
+        var reference = new ArchiveReference(StoreName, key);
 
         // Act
-        var result = await _service.RetrieveAsync(reference);
+        using var result = await _service.RetrieveAsync(reference);
 
         // Assert
-        Assert.Same(stream, result);
+        var bytes = new byte[3];
+        await result.ReadExactlyAsync(bytes);
+        Assert.Equal(content, bytes);
     }
 
     [Fact]
     public async Task ArchiveAsync_Calls_Default_Provider()
     {
         // Arrange
-        using var stream = new MemoryStream();
-        var reference = new ArchiveReference(StoreName, "key");
-        _providerMock.Setup(x => x.ArchiveAsync(stream, It.IsAny<IArchiveMetadata>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(reference);
+        using var stream = new MemoryStream(new byte[] { 7, 8, 9 });
 
         // Act
         var result = await _service.ArchiveAsync(stream);
 
         // Assert
-        Assert.Same(reference, result);
-        _providerMock.Verify(x => x.ArchiveAsync(stream, It.IsAny<IArchiveMetadata>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(StoreName, result.Store);
+        Assert.NotEmpty(result.Key);
+        
+        Assert.True(await _provider.ExistsAsync(result));
     }
 
     [Fact]
     public async Task StatAsync_Calls_Correct_Provider()
     {
         // Arrange
-        var reference = new ArchiveReference(StoreName, "key");
-        var metadata = new ArchiveMetadata();
-        _providerMock.Setup(x => x.StatAsync(reference, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(metadata);
+        var key = "key";
+        var metadata = new ArchiveMetadata(contentType: "text/plain");
+        await _provider.PutAsync(key, new MemoryStream(), metadata);
+        var reference = new ArchiveReference(StoreName, key);
 
         // Act
         var result = await _service.StatAsync(reference);
 
         // Assert
-        Assert.Same(metadata, result);
+        Assert.NotNull(result);
+        Assert.Equal("text/plain", result.ContentType);
     }
 
     [Fact]
     public async Task ExistsAsync_Calls_Correct_Provider()
     {
         // Arrange
-        var reference = new ArchiveReference(StoreName, "key");
-        _providerMock.Setup(x => x.ExistsAsync(reference, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        var key = "key";
+        await _provider.PutAsync(key, new MemoryStream());
+        var reference = new ArchiveReference(StoreName, key);
 
         // Act
         var result = await _service.ExistsAsync(reference);
@@ -112,15 +116,16 @@ public class ArchiveServiceTests
     public async Task DeleteAsync_Calls_Correct_Provider()
     {
         // Arrange
-        var reference = new ArchiveReference(StoreName, "key");
-        _providerMock.Setup(x => x.DeleteAsync(reference, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        var key = "key";
+        await _provider.PutAsync(key, new MemoryStream());
+        var reference = new ArchiveReference(StoreName, key);
 
         // Act
         var result = await _service.DeleteAsync(reference);
 
         // Assert
         Assert.True(result);
+        Assert.False(await _provider.ExistsAsync(reference));
     }
 
     [Fact]

@@ -5,6 +5,7 @@ using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Provisioning;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 using AethericForge.Runtime.Models.Identity.Primitives;
+using AethericForge.Runtime.Providers.Identity.InMemory;
 using AethericForge.Runtime.Services.Identity;
 using AethericForge.Runtime.Services.Identity.Lifecycle;
 
@@ -31,18 +32,20 @@ public class IdentityServiceTests
     {
         // Arrange
         var scheme = IdentityScheme.OpenIdConnect;
-        var credentials = new Dictionary<string, string> { ["u"] = "p" };
-        var principal = new PrincipalIdentity(new IdentitySubject("id", scheme), true);
+        var credentials = new Dictionary<string, string> { ["username"] = "user", ["password"] = "pass" };
+        var subject = new IdentitySubject("user", scheme);
         
-        var provider = new StubIdentityProvider(scheme, principal: principal);
+        var provider = new InMemoryIdentityProvider("test", scheme);
+        provider.AddSubject(subject, "pass");
         var service = new IdentityService(new[] { provider }, _lifecycleService);
 
         // Act
         var result = await service.AuthenticateAsync(scheme, credentials);
 
         // Assert
-        Assert.Same(principal, result);
-        Assert.Equal(credentials, provider.LastCredentials);
+        Assert.NotNull(result);
+        Assert.Equal("user", result.Subject.SubjectId);
+        Assert.True(result.IsAuthenticated);
     }
 
     [Fact]
@@ -64,15 +67,16 @@ public class IdentityServiceTests
         var subjectId = "test-user";
         var subject = new IdentitySubject(subjectId, scheme);
         
-        var provider = new StubIdentityProvider(scheme, subject: subject);
+        var provider = new InMemoryIdentityProvider("test", scheme);
+        provider.AddSubject(subject);
         var service = new IdentityService(new[] { provider }, _lifecycleService);
 
         // Act
         var result = await service.ResolveSubjectAsync(scheme, subjectId);
 
         // Assert
-        Assert.Same(subject, result);
-        Assert.Equal(subjectId, provider.LastSubjectId);
+        Assert.NotNull(result);
+        Assert.Equal(subjectId, result.SubjectId);
     }
 
     [Fact]
@@ -81,16 +85,17 @@ public class IdentityServiceTests
         // Arrange
         var scheme = IdentityScheme.OpenIdConnect;
         var subject = new IdentitySubject("id", scheme);
-        var principal = new StubPrincipalAndSubject("id", scheme);
         
-        var provider = new StubIdentityProvider(scheme, subject: principal);
+        var provider = new InMemoryIdentityProvider("test", scheme);
+        provider.AddSubject(subject, "pass");
         var service = new IdentityService(new[] { provider }, _lifecycleService);
 
         // Act
         var result = await service.ResolvePrincipalAsync(subject);
 
         // Assert
-        Assert.Same(principal, result);
+        Assert.NotNull(result);
+        Assert.Equal("id", result.Subject.SubjectId);
     }
 
     [Fact]
@@ -100,19 +105,17 @@ public class IdentityServiceTests
         var scheme = IdentityScheme.OpenIdConnect;
         var subjectId = "id";
         var subject = new IdentitySubject(subjectId, scheme);
-        var resolvedSubject = new IdentitySubject(subjectId, scheme);
-        var principal = new PrincipalIdentity(resolvedSubject, true);
         
-        var provider = new StubIdentityProvider(scheme, subject: resolvedSubject, principal: principal);
+        var provider = new InMemoryIdentityProvider("test", scheme);
+        provider.AddSubject(subject, "pass");
         var service = new IdentityService(new[] { provider }, _lifecycleService);
 
         // Act
         var result = await service.ResolvePrincipalAsync(subject);
 
         // Assert
-        Assert.Same(principal, result);
-        Assert.NotNull(provider.LastCredentials);
-        Assert.Equal(subjectId, provider.LastCredentials["subjectId"]);
+        Assert.NotNull(result);
+        Assert.Equal(subjectId, result.Subject.SubjectId);
     }
 
     [Fact]
@@ -122,7 +125,7 @@ public class IdentityServiceTests
         var scheme = IdentityScheme.OpenIdConnect;
         var subject = new IdentitySubject("id", scheme);
         
-        var provider = new StubIdentityProvider(scheme);
+        var provider = new InMemoryIdentityProvider("test", scheme);
         var service = new IdentityService(new[] { provider }, _lifecycleService);
 
         // Act
@@ -147,16 +150,19 @@ public class IdentityServiceTests
     public async Task AuthenticateAsync_Uses_Correct_Provider_Among_Multiple()
     {
         // Arrange
-        var provider1 = new StubIdentityProvider(IdentityScheme.Local);
-        var provider2 = new StubIdentityProvider(IdentityScheme.OpenIdConnect);
+        var provider1 = new InMemoryIdentityProvider("p1", IdentityScheme.Local);
+        var provider2 = new InMemoryIdentityProvider("p2", IdentityScheme.OpenIdConnect);
+        var subject = new IdentitySubject("user", IdentityScheme.OpenIdConnect);
+        provider2.AddSubject(subject, "pass");
+        
         var service = new IdentityService(new[] { provider1, provider2 }, _lifecycleService);
 
         // Act
-        await service.AuthenticateAsync(IdentityScheme.OpenIdConnect, new Dictionary<string, string>());
+        var result = await service.AuthenticateAsync(IdentityScheme.OpenIdConnect, new Dictionary<string, string> { ["username"] = "user", ["password"] = "pass" });
 
         // Assert
-        Assert.NotNull(provider2.LastCredentials);
-        Assert.Null(provider1.LastCredentials);
+        Assert.NotNull(result);
+        Assert.Equal("user", result.Subject.SubjectId);
     }
 
     private class StubIdentityProvider : IIdentityProvider
