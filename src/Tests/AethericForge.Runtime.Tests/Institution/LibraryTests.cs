@@ -23,7 +23,6 @@ public class LibraryTests : InstitutionTests<Library>
 
         return new Library(
             (ILibraryContext)context, 
-            Mock.Of<ILibraryService>(), 
             librarian);
     }
 
@@ -54,7 +53,7 @@ public class LibraryTests : InstitutionTests<Library>
         var library = CreateInstitution(context);
         var reference = Mock.Of<AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives.IKnowledgeReference>();
 
-        await library.GetArtifactAsync(reference);
+        await library.Librarian.GetArtifactAsync(reference);
 
         _knowledgeServiceMock.Verify(s => s.GetArtifactAsync(reference, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -67,7 +66,7 @@ public class LibraryTests : InstitutionTests<Library>
         var descriptor = Mock.Of<AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives.IKnowledgeDescriptor>();
         var representations = Enumerable.Empty<AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Representations.IKnowledgeRepresentation>();
 
-        await library.PublishArtifactAsync(descriptor, representations);
+        await library.Librarian.PublishArtifactAsync(descriptor, representations);
 
         _knowledgeServiceMock.Verify(s => s.PublishArtifactAsync(
             descriptor,

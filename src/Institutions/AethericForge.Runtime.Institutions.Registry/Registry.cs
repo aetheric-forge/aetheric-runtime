@@ -1,8 +1,8 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Authentication;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
+using AethericForge.Runtime.Abstractions.Interfaces.Registry.Services;
 using AethericForge.Runtime.Models.Institutions;
-using AethericForge.Runtime.Services.Registry;
 
 namespace AethericForge.Runtime.Institutions.Registry;
 
