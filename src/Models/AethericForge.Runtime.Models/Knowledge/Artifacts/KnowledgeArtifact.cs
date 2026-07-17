@@ -3,6 +3,7 @@ using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Representations;
 using AethericForge.Runtime.Models.Knowledge.Primitives;
+using AethericForge.Runtime.Models.Knowledge.Representations;
 
 namespace AethericForge.Runtime.Models.Knowledge.Artifacts;
 

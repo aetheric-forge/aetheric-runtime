@@ -9,7 +9,7 @@ using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Services;
 
 namespace AethericForge.Runtime.Services.Knowledge;
 
-public sealed class KnowledgeService : IKnowledgeService, ICurator
+public sealed class KnowledgeService : IKnowledgeService
 {
     private readonly IReadOnlyDictionary<string, IKnowledgeProvider> _providers;
 
