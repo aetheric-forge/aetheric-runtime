@@ -14,7 +14,7 @@ public sealed class Postmaster(
 
     public ITeam<IPostClerk> Team => _team;
 
-    public Task<IPostReference> SendAsync(
+    public Task<IPostReference> AcceptAsync(
         IPostEnvelope envelope,
         CancellationToken ct = default)
     {
@@ -23,7 +23,7 @@ public sealed class Postmaster(
         return _exchange.AcceptAsync(envelope, ct);
     }
 
-    public Task<IPostEnvelope?> ReceiveAsync(
+    public Task<IPostEnvelope?> CollectAsync(
         IPostReference reference,
         CancellationToken ct = default)
     {

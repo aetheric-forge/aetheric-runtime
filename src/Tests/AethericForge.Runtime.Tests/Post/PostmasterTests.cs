@@ -45,7 +45,7 @@ public class PostmasterTests
     [Fact]
     public async Task SendAsync_WhenEnvelopeIsNull_ShouldThrowArgumentNullException()
     {
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _postmaster.SendAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _postmaster.AcceptAsync(null!));
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class PostmasterTests
             .ReturnsAsync(referenceMock.Object);
 
         // Act
-        var result = await _postmaster.SendAsync(envelopeMock.Object);
+        var result = await _postmaster.AcceptAsync(envelopeMock.Object);
 
         // Assert
         Assert.Equal(referenceMock.Object, result);
@@ -69,7 +69,7 @@ public class PostmasterTests
     [Fact]
     public async Task ReceiveAsync_WhenReferenceIsNull_ShouldThrowArgumentNullException()
     {
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _postmaster.ReceiveAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _postmaster.CollectAsync(null!));
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class PostmasterTests
             .ReturnsAsync(envelopeMock.Object);
 
         // Act
-        var result = await _postmaster.ReceiveAsync(referenceMock.Object);
+        var result = await _postmaster.CollectAsync(referenceMock.Object);
 
         // Assert
         Assert.Equal(envelopeMock.Object, result);
@@ -100,7 +100,7 @@ public class PostmasterTests
             .ReturnsAsync((IPostEnvelope?)null);
 
         // Act
-        var result = await _postmaster.ReceiveAsync(referenceMock.Object);
+        var result = await _postmaster.CollectAsync(referenceMock.Object);
 
         // Assert
         Assert.Null(result);
