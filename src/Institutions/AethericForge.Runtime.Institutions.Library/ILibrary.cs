@@ -3,6 +3,8 @@ using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Artifacts;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Representations;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Services;
+using AethericForge.Runtime.Abstractions.Interfaces.Library.Services;
 
 namespace AethericForge.Runtime.Institutions.Library;
 
@@ -11,4 +13,8 @@ namespace AethericForge.Runtime.Institutions.Library;
 /// </summary>
 public interface ILibrary : IInstitution
 {
+    
+    ICurator Curator { get; }
+    
+    ILibrarian Librarian { get; }
 }

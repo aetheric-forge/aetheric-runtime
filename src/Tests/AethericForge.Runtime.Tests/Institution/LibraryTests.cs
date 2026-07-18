@@ -5,6 +5,7 @@ using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Library.Services;
 using AethericForge.Runtime.Institutions.Abstractions.Builders;
 using AethericForge.Runtime.Institutions.Library;
+using AethericForge.Runtime.Services.Knowledge;
 using AethericForge.Runtime.Services.Library;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -21,10 +22,15 @@ public class LibraryTests : InstitutionTests<Library>
         var librarian = new Librarian(
             _knowledgeServiceMock.Object, 
             Mock.Of<ITeam<ILibraryClerk>>());
+        
+        var curator = new Curator(
+            _knowledgeServiceMock.Object,
+            Mock.Of<ITeam<ICuratorClerk>>());
 
         return new Library(
             (ILibraryContext)context, 
-            librarian);
+            librarian,
+            curator);
     }
 
     protected override ILibraryContext CreateContext()
