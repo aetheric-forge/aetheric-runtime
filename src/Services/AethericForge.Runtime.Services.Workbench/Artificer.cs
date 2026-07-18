@@ -8,7 +8,22 @@ namespace AethericForge.Runtime.Services.Workbench;
 public sealed class Artificer(IStagingService stagingService, ITeam<IWorkbenchWorker> team) : IArtificer
 {
     private readonly IStagingService _stagingService = stagingService ?? throw new ArgumentNullException(nameof(stagingService));
+    
     public ITeam<IWorkbenchWorker> Team { get; } = team ?? throw new ArgumentNullException(nameof(team));
+    
+    public Task<IStagingReference> PutAsync(
+        string stage,
+        string key,
+        Stream content,
+        IStagingMetadata? metadata = null,
+        CancellationToken ct = default) 
+        => _stagingService.PutAsync(stage, key, content, metadata, ct);
+    
+    public Task<IStagingObject?> GetAsync(IStagingReference reference, CancellationToken ct = default) 
+        => _stagingService.GetAsync(reference, ct);
+    
+    public Task<Stream> OpenReadAsync(IStagingReference reference, CancellationToken ct = default)
+        => _stagingService.OpenReadAsync(reference, ct);
 
     public Task<IStagingMetadata?> StatAsync(IStagingReference reference, CancellationToken ct = default)
         => _stagingService.StatAsync(reference, ct);

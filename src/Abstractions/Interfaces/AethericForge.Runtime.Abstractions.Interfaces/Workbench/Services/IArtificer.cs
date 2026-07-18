@@ -5,6 +5,21 @@ namespace AethericForge.Runtime.Abstractions.Interfaces.Workbench.Services;
 
 public interface IArtificer : IAuthority<IWorkbenchWorker>
 {
+    Task<IStagingReference> PutAsync(
+        string stage,
+        string key,
+        Stream content,
+        IStagingMetadata? metadata = null,
+        CancellationToken ct = default);
+
+    Task<IStagingObject?> GetAsync(
+        IStagingReference reference,
+        CancellationToken ct = default);
+
+    Task<Stream> OpenReadAsync(
+        IStagingReference reference,
+        CancellationToken ct = default);
+
     Task<IStagingMetadata?> StatAsync(
         IStagingReference reference,
         CancellationToken ct = default);
