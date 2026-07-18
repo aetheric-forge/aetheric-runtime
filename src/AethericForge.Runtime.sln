@@ -85,6 +85,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Insti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Institutions.Library", "Institutions\AethericForge.Runtime.Institutions.Library\AethericForge.Runtime.Institutions.Library.csproj", "{EF142468-678A-4493-9C68-388DFBA6CF81}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Institutions.Workbench", "Institutions\AethericForge.Runtime.Institutions.Workbench\AethericForge.Runtime.Institutions.Workbench.csproj", "{1C695667-1AC6-401F-B2B7-F8C73E7E765E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Services.Workbench", "Services\AethericForge.Runtime.Services.Workbench\AethericForge.Runtime.Services.Workbench.csproj", "{E76F680F-D74A-4675-879A-554ABFE78611}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Architecture", "Architecture", "{EBFE318D-50E7-499E-B05B-2697B2E5A16C}"
 	ProjectSection(SolutionItems) = preProject
 		..\docs\architecture\overview.md = ..\docs\architecture\overview.md
@@ -100,6 +104,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Providers.Knowledge.InMemory", "Providers\AethericForge.Runtime.Providers.Knowledge.InMemory\AethericForge.Runtime.Providers.Knowledge.InMemory.csproj", "{1816ED6F-BF83-47FF-8B7A-2B9910FDECBB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Providers.Staging.InMemory", "Providers\AethericForge.Runtime.Providers.Staging.InMemory\AethericForge.Runtime.Providers.Staging.InMemory.csproj", "{23EE0FC0-D89B-4A6C-875D-08FFE5695521}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Services.Registry", "Services\AethericForge.Runtime.Services.Registry\AethericForge.Runtime.Services.Registry.csproj", "{50834FAD-C578-4B19-AA19-AD51AA5F2140}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AethericForge.Runtime.Services.Library", "Services\AethericForge.Runtime.Services.Library\AethericForge.Runtime.Services.Library.csproj", "{63C7806A-FEF1-4399-B8B8-F068EB7749D3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -399,6 +407,30 @@ Global
 		{23EE0FC0-D89B-4A6C-875D-08FFE5695521}.Release|x64.Build.0 = Release|Any CPU
 		{23EE0FC0-D89B-4A6C-875D-08FFE5695521}.Release|x86.ActiveCfg = Release|Any CPU
 		{23EE0FC0-D89B-4A6C-875D-08FFE5695521}.Release|x86.Build.0 = Release|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Debug|x64.Build.0 = Debug|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Debug|x86.Build.0 = Debug|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Release|x64.ActiveCfg = Release|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Release|x64.Build.0 = Release|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Release|x86.ActiveCfg = Release|Any CPU
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140}.Release|x86.Build.0 = Release|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Debug|x64.Build.0 = Debug|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Debug|x86.Build.0 = Debug|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Release|x64.ActiveCfg = Release|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Release|x64.Build.0 = Release|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Release|x86.ActiveCfg = Release|Any CPU
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -430,10 +462,14 @@ Global
 		{1374D613-49C7-4A39-923C-928A94CFC281} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
 		{450CECF1-BC74-4976-9803-543C01130CDD} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
 		{EF142468-678A-4493-9C68-388DFBA6CF81} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
+		{1C695667-1AC6-401F-B2B7-F8C73E7E765E} = {ED5AFC34-EDF4-465F-97CA-2AD0BBA12D61}
+		{E76F680F-D74A-4675-879A-554ABFE78611} = {40546DA9-AF05-432D-929C-49D44BD67639}
 		{EBFE318D-50E7-499E-B05B-2697B2E5A16C} = {3A0D0869-E172-4117-999E-726CCECA4370}
 		{4C59F74B-9E10-47AC-A41F-3E4AFF8A27B9} = {EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}
 		{9A65A8D3-B5B2-471A-B21C-CA754EF924C7} = {EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}
 		{1816ED6F-BF83-47FF-8B7A-2B9910FDECBB} = {EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}
 		{23EE0FC0-D89B-4A6C-875D-08FFE5695521} = {EF8C3A29-77CE-4C9F-BE3E-88DFB0CA9CE3}
+		{50834FAD-C578-4B19-AA19-AD51AA5F2140} = {40546DA9-AF05-432D-929C-49D44BD67639}
+		{63C7806A-FEF1-4399-B8B8-F068EB7749D3} = {40546DA9-AF05-432D-929C-49D44BD67639}
 	EndGlobalSection
 EndGlobal

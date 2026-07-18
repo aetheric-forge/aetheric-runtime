@@ -3,7 +3,6 @@ using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Services;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 using AethericForge.Runtime.Models.Institutions;
-using AethericForge.Runtime.Services.Registry;
 
 namespace AethericForge.Runtime.Institutions.Registry;
 
