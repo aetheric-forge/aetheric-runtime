@@ -20,6 +20,8 @@ public sealed class MongoDbKnowledgeProvider : IKnowledgeProvider
 {
     private readonly IMongoCollection<MongoKnowledgeArtifactDocument> _artifacts;
     private readonly IMongoCollection<MongoAuthoritativeReferenceDocument> _authoritativeReferences;
+    private readonly object _indexInitializationSync = new();
+    private Task? _indexInitialization;
 
     public MongoDbKnowledgeProvider(
         string mongoUri,
@@ -70,6 +72,7 @@ public sealed class MongoDbKnowledgeProvider : IKnowledgeProvider
     {
         ArgumentNullException.ThrowIfNull(authority);
         cancellationToken.ThrowIfCancellationRequested();
+        await EnsureIndexesAsync(cancellationToken);
 
         var filter = Builders<MongoKnowledgeArtifactDocument>.Filter.And(
             Builders<MongoKnowledgeArtifactDocument>.Filter.Eq(
@@ -88,6 +91,34 @@ public sealed class MongoDbKnowledgeProvider : IKnowledgeProvider
             .ToListAsync(cancellationToken);
 
         return documents.Select(ToArtifact).ToArray();
+    }
+
+    private async Task EnsureIndexesAsync(CancellationToken cancellationToken)
+    {
+        Task initialization;
+        lock (_indexInitializationSync)
+        {
+            initialization = _indexInitialization ??= CreateIndexesAsync();
+        }
+
+        await initialization.WaitAsync(cancellationToken);
+    }
+
+    private async Task CreateIndexesAsync()
+    {
+        var keys = Builders<MongoKnowledgeArtifactDocument>.IndexKeys
+            .Ascending("authority.identity.scheme")
+            .Ascending("authority.identity.subjectId")
+            .Ascending("authority.context")
+            .Descending("createdAtUtc");
+
+        await _artifacts.Indexes.CreateOneAsync(
+            new CreateIndexModel<MongoKnowledgeArtifactDocument>(
+                keys,
+                new CreateIndexOptions
+                {
+                    Name = "authority_lookup_created_desc"
+                }));
     }
 
     public async Task<IKnowledgeArtifact> StoreArtifactAsync(
