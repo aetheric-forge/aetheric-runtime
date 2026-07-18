@@ -3,7 +3,7 @@ using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Provisioning;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 
-namespace AethericForge.Runtime.Services.Registry;
+namespace AethericForge.Runtime.Abstractions.Interfaces.Identity.Services;
 
 public interface IRegistryService
 {

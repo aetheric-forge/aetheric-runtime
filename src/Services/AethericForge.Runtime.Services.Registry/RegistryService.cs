@@ -4,18 +4,17 @@ using AethericForge.Runtime.Abstractions.Interfaces.Identity.Principals;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Provisioning;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Services;
-using AethericForge.Runtime.Abstractions.Interfaces.Registry.Services;
 
 namespace AethericForge.Runtime.Services.Registry;
 
 public sealed class RegistryService(
     IIdentityService identityService,
-    ITeam<AethericForge.Runtime.Abstractions.Interfaces.Registry.Services.IRegistryClerk> team)
-    : IRegistryService, AethericForge.Runtime.Abstractions.Interfaces.Registry.Services.IRegistrar
+    ITeam<IRegistryClerk> team)
+    : IRegistryService
 {
     public IIdentityService Identity { get; } = identityService ?? throw new ArgumentNullException(nameof(identityService));
 
-    public ITeam<AethericForge.Runtime.Abstractions.Interfaces.Registry.Services.IRegistryClerk> Team { get; } = team ?? throw new ArgumentNullException(nameof(team));
+    public ITeam<IRegistryClerk> Team { get; } = team ?? throw new ArgumentNullException(nameof(team));
 
     public Task<IPrincipalIdentity?> AuthenticateAsync(
         IdentityScheme scheme,
