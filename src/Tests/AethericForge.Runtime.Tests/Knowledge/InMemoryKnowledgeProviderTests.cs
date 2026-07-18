@@ -1,4 +1,5 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Identity.Subjects;
+using AethericForge.Runtime.Abstractions.Interfaces.Identity.Authentication;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Representations;
 using AethericForge.Runtime.Models.Knowledge.Artifacts;
 using AethericForge.Runtime.Models.Knowledge.Authorities;
@@ -51,5 +52,35 @@ public class InMemoryKnowledgeProviderTests
 
         // Assert
         Assert.Equal(artifact.Reference, resolved);
+    }
+
+    [Fact]
+    public async Task FindArtifactsAsync_ReturnsOnlyExactAuthorityMatches()
+    {
+        var owner = new Mock<IIdentitySubject>();
+        owner.SetupGet(identity => identity.SubjectId).Returns("owner");
+        owner.SetupGet(identity => identity.Scheme).Returns(IdentityScheme.OpenIdConnect);
+
+        var otherOwner = new Mock<IIdentitySubject>();
+        otherOwner.SetupGet(identity => identity.SubjectId).Returns("other-owner");
+        otherOwner.SetupGet(identity => identity.Scheme).Returns(IdentityScheme.OpenIdConnect);
+
+        var captureAuthority = new KnowledgeAuthority(owner.Object, "ParallelYou.Capture");
+        var otherContext = new KnowledgeAuthority(owner.Object, "ParallelYou.Reflection");
+        var otherAuthority = new KnowledgeAuthority(otherOwner.Object, "ParallelYou.Capture");
+
+        var expected = await _provider.StoreArtifactAsync(
+            new KnowledgeDescriptor("Expected"), [], authority: captureAuthority);
+        await _provider.StoreArtifactAsync(
+            new KnowledgeDescriptor("Other context"), [], authority: otherContext);
+        await _provider.StoreArtifactAsync(
+            new KnowledgeDescriptor("Other owner"), [], authority: otherAuthority);
+        await _provider.StoreArtifactAsync(
+            new KnowledgeDescriptor("Anonymous"), []);
+
+        var results = await _provider.FindArtifactsAsync(captureAuthority);
+
+        var artifact = Assert.Single(results);
+        Assert.Equal(expected.Reference, artifact.Reference);
     }
 }

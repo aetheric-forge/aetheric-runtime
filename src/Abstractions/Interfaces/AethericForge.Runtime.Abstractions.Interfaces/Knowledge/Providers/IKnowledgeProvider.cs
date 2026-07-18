@@ -11,6 +11,10 @@ public interface IKnowledgeProvider
     string Scheme { get; }
     
     Task<IKnowledgeArtifact?> GetArtifactAsync(IKnowledgeReference reference, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<IKnowledgeArtifact>> FindArtifactsAsync(
+        IKnowledgeAuthority authority,
+        CancellationToken cancellationToken = default);
     
     Task<IKnowledgeArtifact> StoreArtifactAsync(
         IKnowledgeDescriptor descriptor,

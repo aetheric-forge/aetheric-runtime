@@ -16,6 +16,10 @@ public interface ILibrarian : IAuthority<ILibraryClerk>
         IKnowledgeReference reference,
         CancellationToken ct = default);
 
+    Task<IReadOnlyCollection<IKnowledgeArtifact>> FindArtifactsAsync(
+        IKnowledgeAuthority authority,
+        CancellationToken ct = default);
+
     Task<IKnowledgeArtifact> PublishArtifactAsync(
         IKnowledgeDescriptor descriptor,
         IEnumerable<IKnowledgeRepresentation> representations,

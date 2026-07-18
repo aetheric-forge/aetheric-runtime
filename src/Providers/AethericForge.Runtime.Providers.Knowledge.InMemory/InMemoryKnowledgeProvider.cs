@@ -36,6 +36,24 @@ public sealed class InMemoryKnowledgeProvider : IKnowledgeProvider
         }
     }
 
+    public Task<IReadOnlyCollection<IKnowledgeArtifact>> FindArtifactsAsync(
+        IKnowledgeAuthority authority,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(authority);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        lock (_sync)
+        {
+            IReadOnlyCollection<IKnowledgeArtifact> artifacts = _artifacts.Values
+                .Where(artifact => HasAuthority(artifact, authority))
+                .OrderByDescending(artifact => artifact.CreatedAtUtc)
+                .ToArray();
+
+            return Task.FromResult(artifacts);
+        }
+    }
+
     public Task<IKnowledgeArtifact> StoreArtifactAsync(
         IKnowledgeDescriptor descriptor,
         IEnumerable<IKnowledgeRepresentation> representations,
@@ -105,6 +123,23 @@ public sealed class InMemoryKnowledgeProvider : IKnowledgeProvider
     private static string GetKey(IKnowledgeReference reference)
     {
         return $"{reference.Scheme}:{reference.Kind}/{reference.Name}@{reference.Version}.{reference.Revision}";
+    }
+
+    private static bool HasAuthority(
+        IKnowledgeArtifact artifact,
+        IKnowledgeAuthority authority)
+    {
+        var artifactAuthority = artifact.Authority;
+        return artifactAuthority is not null &&
+               artifactAuthority.Identity.Scheme == authority.Identity.Scheme &&
+               string.Equals(
+                   artifactAuthority.Identity.SubjectId,
+                   authority.Identity.SubjectId,
+                   StringComparison.Ordinal) &&
+               string.Equals(
+                   artifactAuthority.Context,
+                   authority.Context,
+                   StringComparison.Ordinal);
     }
 
     private static string NormalizeRequired(string value, string parameterName)

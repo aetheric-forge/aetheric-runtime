@@ -1,6 +1,7 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Institutions;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Services;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Library.Services;
 using AethericForge.Runtime.Institutions.Abstractions.Builders;
 using AethericForge.Runtime.Institutions.Library;
@@ -73,6 +74,20 @@ public class LibraryTests : InstitutionTests<Library>
             representations,
             It.IsAny<IEnumerable<AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives.IKnowledgeReference>>(),
             It.IsAny<AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities.IKnowledgeAuthority>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task FindArtifactsAsync_ShouldDelegateToKnowledgeService()
+    {
+        var context = CreateContext();
+        var library = CreateInstitution(context);
+        var authority = Mock.Of<IKnowledgeAuthority>();
+
+        await library.Librarian.FindArtifactsAsync(authority);
+
+        _knowledgeServiceMock.Verify(service => service.FindArtifactsAsync(
+            authority,
             It.IsAny<CancellationToken>()), Times.Once);
     }
 }
