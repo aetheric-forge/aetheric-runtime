@@ -14,6 +14,7 @@
       <ProjectReference Include="..\AethericForge.Runtime.Institutions.Library\AethericForge.Runtime.Institutions.Library.csproj" />
       <ProjectReference Include="..\AethericForge.Runtime.Institutions.PostOffice\AethericForge.Runtime.Institutions.PostOffice.csproj" />
       <ProjectReference Include="..\AethericForge.Runtime.Institutions.Registry\AethericForge.Runtime.Institutions.Registry.csproj" />
+      <ProjectReference Include="..\AethericForge.Runtime.Institutions.Workbench\AethericForge.Runtime.Institutions.Workbench.csproj" />
     </ItemGroup>
 
 </Project>
