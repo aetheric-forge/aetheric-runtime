@@ -1,8 +1,12 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Consumers;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
+using AethericForge.Runtime.Abstractions.Interfaces.Post.Providers;
+using AethericForge.Runtime.Institutions.PostOffice;
 using AethericForge.Runtime.Models.Post;
 using AethericForge.Runtime.Providers.Post.InMemory;
 using AethericForge.Runtime.Services.Post;
+using AethericForge.Runtime.Services.Workbench;
+using Moq;
 
 namespace AethericForge.Runtime.Tests.Post;
 
@@ -12,7 +16,7 @@ public class PostTests
     public async Task PostService_Publishes_To_Subscribers_On_Matching_Reference()
     {
         var provider = new InMemoryPostProvider("campus");
-        var service = new PostService([provider]);
+        var service = CreateService(provider);
         var contract = new PostContract("student.enrolled", "1", PostIntent.Event);
         var reference = new PostReference("campus", "students/enrolled", contract);
         var consumer = new RecordingConsumer<StudentEnrolled>(contract);
@@ -29,7 +33,7 @@ public class PostTests
     public async Task InMemoryPostProvider_Uses_Exact_Reference_Matching()
     {
         var provider = new InMemoryPostProvider("campus");
-        var service = new PostService([provider]);
+        var service = CreateService(provider);
         var contract = new PostContract("student.enrolled", "1", PostIntent.Event);
         var subscribed = new PostReference(
             "campus",
@@ -53,7 +57,7 @@ public class PostTests
     public async Task InMemoryPostContext_Can_Publish_Followup_Message()
     {
         var provider = new InMemoryPostProvider("campus");
-        var service = new PostService([provider]);
+        var service = CreateService(provider);
         var receivedContract = new PostContract("student.enrolled", "1", PostIntent.Event);
         var followupContract = new PostContract("student.welcomed", "1", PostIntent.Event);
         var receivedReference = new PostReference("campus", "students/enrolled", receivedContract);
@@ -77,7 +81,7 @@ public class PostTests
     [Fact]
     public async Task PostService_Requires_A_Provider_For_The_Requested_Domain()
     {
-        var service = new PostService([new InMemoryPostProvider("campus")]);
+        var service = CreateService(new InMemoryPostProvider("campus"));
         var reference = new PostReference(
             "archive",
             "students/enrolled",
@@ -85,6 +89,38 @@ public class PostTests
 
         await Assert.ThrowsAsync<KeyNotFoundException>(
             () => service.PublishAsync(reference, new StudentEnrolled("student-1")));
+    }
+
+    [Fact]
+    public async Task PostService_Publishes_Envelopes_Arriving_From_The_Workbench()
+    {
+        var provider = new Mock<IPostProvider>();
+        provider.SetupGet(x => x.Name).Returns("campus");
+        var exchange = new Mock<IPostExchange>();
+        var workbench = new WorkbenchService();
+        exchange
+            .Setup(x => x.AcceptAsync(It.IsAny<IPostEnvelope>(), It.IsAny<CancellationToken>()))
+            .Returns<IPostEnvelope, CancellationToken>(async (envelope, ct) =>
+            {
+                await workbench.PutAsync(envelope.Reference, envelope, ct);
+                return envelope.Reference;
+            });
+        using var service = new PostService([provider.Object], exchange.Object, workbench);
+        var reference = new PostReference(
+            "campus",
+            "students/enrolled",
+            new PostContract("student.enrolled", "1", PostIntent.Event));
+        var envelope = new PostEnvelope<StudentEnrolled>(
+            reference,
+            new StudentEnrolled("student-1"),
+            new PostMetadata());
+
+        var acceptedReference = await service.AcceptAsync(envelope);
+
+        Assert.Same(reference, acceptedReference);
+        provider.Verify(
+            x => x.PublishAsync(envelope, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -123,6 +159,14 @@ public class PostTests
 
     private sealed record StudentEnrolled(string StudentId);
     private sealed record StudentWelcomed(string StudentId);
+
+    private static PostService CreateService(IPostProvider provider)
+    {
+        return new PostService(
+            [provider],
+            Mock.Of<IPostExchange>(),
+            new WorkbenchService());
+    }
 
     private sealed class PublishingConsumer<TReceived, TPublished> : IMessageConsumer<TReceived>
     {

@@ -7,6 +7,14 @@ using AethericForge.Runtime.Abstractions.Interfaces.Post.Consumers;
 
 public interface IPostService
 {
+    Task<IPostReference> AcceptAsync(
+        IPostEnvelope envelope,
+        CancellationToken ct = default);
+
+    Task<IPostEnvelope?> CollectAsync(
+        IPostReference reference,
+        CancellationToken ct = default);
+
     Task PublishAsync<TMessage>(
         IPostReference reference,
         TMessage message,

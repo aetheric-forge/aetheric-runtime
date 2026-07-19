@@ -1,35 +1,32 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Services;
-using AethericForge.Runtime.Institutions.PostOffice;
-using AethericForge.Runtime.Models.Authorities;
 using AethericForge.Runtime.Services.Post;
 using Moq;
-using Xunit;
 
 namespace AethericForge.Runtime.Tests.Post;
 
 public class PostmasterTests
 {
-    private readonly Mock<IPostExchange> _exchangeMock;
+    private readonly Mock<IPostService> _serviceMock;
     private readonly Mock<ITeam<IPostClerk>> _teamMock;
     private readonly Postmaster _postmaster;
 
     public PostmasterTests()
     {
-        _exchangeMock = new Mock<IPostExchange>();
+        _serviceMock = new Mock<IPostService>();
         _teamMock = new Mock<ITeam<IPostClerk>>();
-        _postmaster = new Postmaster(_teamMock.Object, _exchangeMock.Object);
+        _postmaster = new Postmaster(_teamMock.Object, _serviceMock.Object);
     }
 
     [Fact]
     public void Constructor_WhenTeamIsNull_ShouldThrowArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => new Postmaster(null!, _exchangeMock.Object));
+        Assert.Throws<ArgumentNullException>(() => new Postmaster(null!, _serviceMock.Object));
     }
 
     [Fact]
-    public void Constructor_WhenExchangeIsNull_ShouldThrowArgumentNullException()
+    public void Constructor_WhenServiceIsNull_ShouldThrowArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() => new Postmaster(_teamMock.Object, null!));
     }
@@ -54,7 +51,7 @@ public class PostmasterTests
         // Arrange
         var envelopeMock = new Mock<IPostEnvelope>();
         var referenceMock = new Mock<IPostReference>();
-        _exchangeMock
+        _serviceMock
             .Setup(x => x.AcceptAsync(envelopeMock.Object, It.IsAny<CancellationToken>()))
             .ReturnsAsync(referenceMock.Object);
 
@@ -63,7 +60,7 @@ public class PostmasterTests
 
         // Assert
         Assert.Equal(referenceMock.Object, result);
-        _exchangeMock.Verify(x => x.AcceptAsync(envelopeMock.Object, It.IsAny<CancellationToken>()), Times.Once);
+        _serviceMock.Verify(x => x.AcceptAsync(envelopeMock.Object, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -78,7 +75,7 @@ public class PostmasterTests
         // Arrange
         var referenceMock = new Mock<IPostReference>();
         var envelopeMock = new Mock<IPostEnvelope>();
-        _exchangeMock
+        _serviceMock
             .Setup(x => x.CollectAsync(referenceMock.Object, It.IsAny<CancellationToken>()))
             .ReturnsAsync(envelopeMock.Object);
 
@@ -87,7 +84,7 @@ public class PostmasterTests
 
         // Assert
         Assert.Equal(envelopeMock.Object, result);
-        _exchangeMock.Verify(x => x.CollectAsync(referenceMock.Object, It.IsAny<CancellationToken>()), Times.Once);
+        _serviceMock.Verify(x => x.CollectAsync(referenceMock.Object, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -95,7 +92,7 @@ public class PostmasterTests
     {
         // Arrange
         var referenceMock = new Mock<IPostReference>();
-        _exchangeMock
+        _serviceMock
             .Setup(x => x.CollectAsync(referenceMock.Object, It.IsAny<CancellationToken>()))
             .ReturnsAsync((IPostEnvelope?)null);
 

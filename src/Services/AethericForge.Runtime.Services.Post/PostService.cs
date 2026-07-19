@@ -8,17 +8,26 @@ using AethericForge.Runtime.Abstractions.Interfaces.Post.Consumers;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Providers;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Services;
+using AethericForge.Runtime.Abstractions.Interfaces.Workbench.Services;
+using AethericForge.Runtime.Institutions.PostOffice;
 using AethericForge.Runtime.Models.Post;
 
 namespace AethericForge.Runtime.Services.Post;
 
-public sealed class PostService : IPostService
+public sealed class PostService : IPostService, IDisposable
 {
     private readonly IReadOnlyDictionary<string, IPostProvider> _providers;
+    private readonly IPostExchange _exchange;
+    private readonly IDisposable _workbenchSubscription;
 
-    public PostService(IEnumerable<IPostProvider> providers)
+    public PostService(
+        IEnumerable<IPostProvider> providers,
+        IPostExchange exchange,
+        IWorkbenchService workbench)
     {
         ArgumentNullException.ThrowIfNull(providers);
+        _exchange = exchange ?? throw new ArgumentNullException(nameof(exchange));
+        ArgumentNullException.ThrowIfNull(workbench);
 
         _providers = providers.ToDictionary(provider => provider.Name, StringComparer.Ordinal);
 
@@ -26,6 +35,24 @@ public sealed class PostService : IPostService
         {
             throw new ArgumentException("At least one post provider is required.", nameof(providers));
         }
+
+        _workbenchSubscription = workbench.Subscribe<IPostEnvelope>(PublishAsync);
+    }
+
+    public Task<IPostReference> AcceptAsync(
+        IPostEnvelope envelope,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(envelope);
+        return _exchange.AcceptAsync(envelope, ct);
+    }
+
+    public Task<IPostEnvelope?> CollectAsync(
+        IPostReference reference,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(reference);
+        return _exchange.CollectAsync(reference, ct);
     }
 
     public Task PublishAsync<TMessage>(
@@ -55,6 +82,18 @@ public sealed class PostService : IPostService
         ct.ThrowIfCancellationRequested();
 
         return GetProvider(reference).SubscribeAsync(reference, consumer, ct);
+    }
+
+    public void Dispose()
+    {
+        _workbenchSubscription.Dispose();
+    }
+
+    private Task PublishAsync(
+        IPostEnvelope envelope,
+        CancellationToken ct)
+    {
+        return GetProvider(envelope.Reference).PublishAsync(envelope, ct);
     }
 
     private IPostProvider GetProvider(IPostReference reference)

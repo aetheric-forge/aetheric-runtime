@@ -1,4 +1,3 @@
-using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Services;
 using AethericForge.Runtime.Models.Institutions;
 
@@ -11,8 +10,6 @@ public sealed class PostOffice(
 {
     public IPostmaster Postmaster { get; } =
         postmaster ?? throw new ArgumentNullException(nameof(postmaster));
-    
-    public new IPostOfficeContext Context { get; } =
-        context ?? throw new ArgumentNullException(nameof(context));
 
+    public new IPostOfficeContext Context => (IPostOfficeContext)base.Context;
 }

@@ -2,7 +2,6 @@ using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Services;
 using AethericForge.Runtime.Institutions.PostOffice;
 using Moq;
-using Xunit;
 
 namespace AethericForge.Runtime.Tests.Post;
 
@@ -29,24 +28,6 @@ public class PostOfficeTests
     public void Postmaster_ShouldBeSet()
     {
         Assert.Equal(_postmasterMock.Object, _postOffice.Postmaster);
-    }
-
-    [Fact]
-    public async Task AcceptAsync_ShouldDelegateToPostmaster()
-    {
-        // Arrange
-        var envelopeMock = new Mock<IPostEnvelope>();
-        var referenceMock = new Mock<IPostReference>();
-        _postmasterMock
-            .Setup(x => x.AcceptAsync(envelopeMock.Object, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(referenceMock.Object);
-
-        // Act
-        var result = await _postOffice.Postmaster.AcceptAsync(envelopeMock.Object);
-
-        // Assert
-        Assert.Equal(referenceMock.Object, result);
-        _postmasterMock.Verify(x => x.CollectAsync(referenceMock.Object, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
