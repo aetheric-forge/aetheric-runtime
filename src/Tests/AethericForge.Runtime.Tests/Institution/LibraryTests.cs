@@ -1,9 +1,11 @@
 using AethericForge.Runtime.Abstractions.Interfaces.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Institutions;
 using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Services;
+using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities;
 using AethericForge.Runtime.Abstractions.Interfaces.Library.Services;
 using AethericForge.Runtime.Institutions.Abstractions.Builders;
 using AethericForge.Runtime.Institutions.Library;
+using AethericForge.Runtime.Services.Knowledge;
 using AethericForge.Runtime.Services.Library;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -20,11 +22,15 @@ public class LibraryTests : InstitutionTests<Library>
         var librarian = new Librarian(
             _knowledgeServiceMock.Object, 
             Mock.Of<ITeam<ILibraryClerk>>());
+        
+        var curator = new Curator(
+            _knowledgeServiceMock.Object,
+            Mock.Of<ITeam<ICuratorClerk>>());
 
         return new Library(
             (ILibraryContext)context, 
-            Mock.Of<ILibraryService>(), 
-            librarian);
+            librarian,
+            curator);
     }
 
     protected override ILibraryContext CreateContext()
@@ -54,7 +60,7 @@ public class LibraryTests : InstitutionTests<Library>
         var library = CreateInstitution(context);
         var reference = Mock.Of<AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives.IKnowledgeReference>();
 
-        await library.GetArtifactAsync(reference);
+        await library.Librarian.GetArtifactAsync(reference);
 
         _knowledgeServiceMock.Verify(s => s.GetArtifactAsync(reference, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -67,13 +73,27 @@ public class LibraryTests : InstitutionTests<Library>
         var descriptor = Mock.Of<AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives.IKnowledgeDescriptor>();
         var representations = Enumerable.Empty<AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Representations.IKnowledgeRepresentation>();
 
-        await library.PublishArtifactAsync(descriptor, representations);
+        await library.Librarian.PublishArtifactAsync(descriptor, representations);
 
         _knowledgeServiceMock.Verify(s => s.PublishArtifactAsync(
             descriptor,
             representations,
             It.IsAny<IEnumerable<AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Primitives.IKnowledgeReference>>(),
             It.IsAny<AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Authorities.IKnowledgeAuthority>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task FindArtifactsAsync_ShouldDelegateToKnowledgeService()
+    {
+        var context = CreateContext();
+        var library = CreateInstitution(context);
+        var authority = Mock.Of<IKnowledgeAuthority>();
+
+        await library.Librarian.FindArtifactsAsync(authority);
+
+        _knowledgeServiceMock.Verify(service => service.FindArtifactsAsync(
+            authority,
             It.IsAny<CancellationToken>()), Times.Once);
     }
 }

@@ -9,7 +9,7 @@ using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Services;
 
 namespace AethericForge.Runtime.Services.Knowledge;
 
-public sealed class KnowledgeService : IKnowledgeService, ICurator
+public sealed class KnowledgeService : IKnowledgeService
 {
     private readonly IReadOnlyDictionary<string, IKnowledgeProvider> _providers;
 
@@ -30,6 +30,22 @@ public sealed class KnowledgeService : IKnowledgeService, ICurator
         }
 
         return null;
+    }
+
+    public async Task<IReadOnlyCollection<IKnowledgeArtifact>> FindArtifactsAsync(
+        IKnowledgeAuthority authority,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(authority);
+
+        var searches = _providers.Values
+            .Select(provider => provider.FindArtifactsAsync(authority, cancellationToken));
+        var results = await Task.WhenAll(searches);
+
+        return results
+            .SelectMany(artifacts => artifacts)
+            .OrderByDescending(artifact => artifact.CreatedAtUtc)
+            .ToArray();
     }
 
     public async Task<IKnowledgeArtifact> PublishArtifactAsync(

@@ -1,24 +1,33 @@
-using System.Collections.Concurrent;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
+using AethericForge.Runtime.Institutions.Workbench;
 using AethericForge.Runtime.Institutions.PostOffice;
 
 namespace AethericForge.Runtime.Services.Post;
 
-public sealed class PostExchange : IPostExchange
+public sealed class PostExchange(IWorkbench workbench) : IPostExchange
 {
-    private readonly ConcurrentDictionary<IPostReference, IPostEnvelope> _storage = new();
+    private readonly IWorkbench _workbench =
+        workbench ?? throw new ArgumentNullException(nameof(workbench));
 
-    public Task<IPostReference> AcceptAsync(IPostEnvelope envelope, CancellationToken ct = default)
+    public async Task<IPostReference> AcceptAsync(
+        IPostEnvelope envelope,
+        CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(envelope);
-        _storage.TryAdd(envelope.Reference, envelope);
-        return Task.FromResult(envelope.Reference);
+
+        await _workbench.WorkbenchService
+            .PutAsync(envelope.Reference, envelope, ct)
+            .ConfigureAwait(false);
+
+        return envelope.Reference;
     }
 
-    public Task<IPostEnvelope?> CollectAsync(IPostReference reference, CancellationToken ct = default)
+    public Task<IPostEnvelope?> CollectAsync(
+        IPostReference reference,
+        CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(reference);
-        _storage.TryGetValue(reference, out var envelope);
-        return Task.FromResult(envelope);
+
+        return _workbench.WorkbenchService.GetAsync<IPostEnvelope>(reference, ct);
     }
 }

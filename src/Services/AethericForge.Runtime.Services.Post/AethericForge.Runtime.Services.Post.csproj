@@ -10,6 +10,7 @@
       <ProjectReference Include="..\..\Abstractions\Interfaces\AethericForge.Runtime.Abstractions.Interfaces\AethericForge.Runtime.Abstractions.Interfaces.csproj" />
       <ProjectReference Include="..\..\Models\AethericForge.Runtime.Models\AethericForge.Runtime.Models.csproj" />
       <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.PostOffice\AethericForge.Runtime.Institutions.PostOffice.csproj" />
+      <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Workbench\AethericForge.Runtime.Institutions.Workbench.csproj" />
     </ItemGroup>
 
 </Project>

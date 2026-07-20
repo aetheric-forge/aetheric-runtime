@@ -4,12 +4,10 @@ using AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Services;
 
 namespace AethericForge.Runtime.Services.Knowledge;
 
-public sealed class Curator : ICurator
+public sealed class Curator(IKnowledgeService knowledgeService, ITeam<ICuratorClerk> team)
+    : ICurator
 {
-    public Curator(ITeam<ICuratorClerk> team)
-    {
-        Team = team ?? throw new ArgumentNullException(nameof(team));
-    }
+    private readonly IKnowledgeService _knowledgeService = knowledgeService;
 
-    public ITeam<ICuratorClerk> Team { get; }
+    public ITeam<ICuratorClerk> Team { get; } = team ?? throw new ArgumentNullException(nameof(team));
 }

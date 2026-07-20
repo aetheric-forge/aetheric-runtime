@@ -9,6 +9,10 @@ namespace AethericForge.Runtime.Abstractions.Interfaces.Knowledge.Services;
 public interface IKnowledgeService
 {
     Task<IKnowledgeArtifact?> GetArtifactAsync(IKnowledgeReference reference, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<IKnowledgeArtifact>> FindArtifactsAsync(
+        IKnowledgeAuthority authority,
+        CancellationToken cancellationToken = default);
     
     Task<IKnowledgeArtifact> PublishArtifactAsync(
         IKnowledgeDescriptor descriptor,

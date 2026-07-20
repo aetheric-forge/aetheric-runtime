@@ -22,7 +22,7 @@ public interface IPostmaster : IAuthority<IPostClerk>
     /// </param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A reference to the posted envelope.</returns>
-    Task<IPostReference> SendAsync(
+    Task<IPostReference> AcceptAsync(
         IPostEnvelope envelope,
         CancellationToken ct = default);
 
@@ -36,7 +36,7 @@ public interface IPostmaster : IAuthority<IPostClerk>
     /// <returns>
     /// The corresponding post envelope, or null if it is unavailable.
     /// </returns>
-    Task<IPostEnvelope?> ReceiveAsync(
+    Task<IPostEnvelope?> CollectAsync(
         IPostReference reference,
         CancellationToken ct = default);
 }

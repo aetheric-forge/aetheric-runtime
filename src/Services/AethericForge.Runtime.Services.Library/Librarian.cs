@@ -15,6 +15,11 @@ public sealed class Librarian(IKnowledgeService knowledgeService, ITeam<ILibrary
         CancellationToken ct = default)
         => knowledgeService.GetArtifactAsync(reference, ct);
 
+    public Task<IReadOnlyCollection<IKnowledgeArtifact>> FindArtifactsAsync(
+        IKnowledgeAuthority authority,
+        CancellationToken ct = default)
+        => knowledgeService.FindArtifactsAsync(authority, ct);
+
     public Task<IKnowledgeArtifact> PublishArtifactAsync(
         IKnowledgeDescriptor descriptor,
         IEnumerable<IKnowledgeRepresentation> representations,

@@ -7,28 +7,28 @@ namespace AethericForge.Runtime.Services.Post;
 
 public sealed class Postmaster(
     ITeam<IPostClerk> team,
-    IPostExchange exchange) : IPostmaster
+    IPostService service) : IPostmaster
 {
     private readonly ITeam<IPostClerk> _team = team ?? throw new ArgumentNullException(nameof(team));
-    private readonly IPostExchange _exchange = exchange ?? throw new ArgumentNullException(nameof(exchange));
+    private readonly IPostService _service = service ?? throw new ArgumentNullException(nameof(service));
 
     public ITeam<IPostClerk> Team => _team;
 
-    public Task<IPostReference> SendAsync(
+    public Task<IPostReference> AcceptAsync(
         IPostEnvelope envelope,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(envelope);
 
-        return _exchange.AcceptAsync(envelope, ct);
+        return _service.AcceptAsync(envelope, ct);
     }
 
-    public Task<IPostEnvelope?> ReceiveAsync(
+    public Task<IPostEnvelope?> CollectAsync(
         IPostReference reference,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(reference);
 
-        return _exchange.CollectAsync(reference, ct);
+        return _service.CollectAsync(reference, ct);
     }
 }

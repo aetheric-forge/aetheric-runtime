@@ -56,6 +56,38 @@ public class KnowledgeServiceTests
     }
 
     [Fact]
+    public async Task FindArtifactsAsync_AggregatesProviders()
+    {
+        var authority = Mock.Of<IKnowledgeAuthority>();
+        var firstArtifact = Mock.Of<IKnowledgeArtifact>();
+        var secondArtifact = Mock.Of<IKnowledgeArtifact>();
+        var firstProvider = new Mock<IKnowledgeProvider>();
+        var secondProvider = new Mock<IKnowledgeProvider>();
+
+        firstProvider.SetupGet(provider => provider.Scheme).Returns("first");
+        secondProvider.SetupGet(provider => provider.Scheme).Returns("second");
+        firstProvider
+            .Setup(provider => provider.FindArtifactsAsync(
+                authority,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { firstArtifact });
+        secondProvider
+            .Setup(provider => provider.FindArtifactsAsync(
+                authority,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { secondArtifact });
+
+        var service = new KnowledgeService(
+            [firstProvider.Object, secondProvider.Object],
+            Mock.Of<ITeam<ICuratorClerk>>());
+
+        var results = await service.FindArtifactsAsync(authority);
+
+        Assert.Contains(firstArtifact, results);
+        Assert.Contains(secondArtifact, results);
+    }
+
+    [Fact]
     public async Task ResolveReferenceAsync_ResolvesAuthoritativeReference()
     {
         // Arrange
