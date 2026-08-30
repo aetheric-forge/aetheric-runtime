@@ -121,6 +121,10 @@ Provisioning creates or updates an Identity representation within a governing co
 
 No provider defines the ontology of Identity merely by storing or authenticating it.
 
+External directory providers may supply current facts about identities and group membership independently of authentication. Directory references preserve the provider, realm, and stable external identifier that give those facts their scope. Directory observations identify when the facts were obtained and, when known, how long they may be treated as current.
+
+A directory lookup that finds no subject or group is distinct from one that cannot establish an answer because its provider is unavailable, untrusted, or misconfigured. Consumers **SHALL NOT** interpret an unavailable or untrusted observation as authoritative absence. The application using a directory fact remains responsible for assigning domain meaning to external groups; the Identity domain does not infer application roles from group names or identifiers.
+
 ---
 
 ### §8. Lifecycle
