@@ -36,3 +36,19 @@ Configure the `KeycloakOptions` in your application:
   }
 }
 ```
+
+The realm service account used for runtime directory reads requires Keycloak Admin API
+permissions to view users and groups (normally the `view-users` role from the
+`realm-management` client). The provider obtains a client-credentials token and exposes
+directory reads through `KeycloakExternalIdentityDirectory`:
+
+```csharp
+IExternalIdentityDirectory directory =
+    new KeycloakExternalIdentityDirectory(httpClient, keycloakOptions);
+```
+
+`Authority` should be the realm authority (for example,
+`https://keycloak.example/realms/campus`). The Admin API address is derived from it.
+Set `AdminApiBaseAddress` explicitly when Keycloak is exposed through a proxy whose
+Admin API does not share the authority's base path. Successful observations are fresh
+for one minute by default; use `DirectoryFreshnessLifetime` to change that policy.
