@@ -127,6 +127,48 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
         return Success(identities);
     }
 
+    /// <summary>Resolves one unambiguous Keycloak group by its exact display name.</summary>
+    public async Task<IExternalDirectoryResult<IExternalGroupReference>> ResolveGroupAsync(
+        string groupName,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(groupName))
+        {
+            throw new ArgumentException("A group name is required.", nameof(groupName));
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var encodedName = Uri.EscapeDataString(groupName.Trim());
+        var response = await GetAllPagesAsync<GroupRepresentation>(
+            $"groups?briefRepresentation=true&populateHierarchy=true&exact=true&search={encodedName}",
+            cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccess)
+        {
+            return Failure<IExternalGroupReference, List<GroupRepresentation>>(response);
+        }
+
+        var matches = FlattenGroups(response.Value!)
+            .Where(group =>
+                !string.IsNullOrWhiteSpace(group.Id) &&
+                string.Equals(group.Name, groupName.Trim(), StringComparison.Ordinal))
+            .GroupBy(group => group.Id, StringComparer.Ordinal)
+            .Select(group => group.First())
+            .ToArray();
+        return matches.Length switch
+        {
+            0 => ExternalDirectoryResult<IExternalGroupReference>.Failure(
+                ExternalDirectoryStatus.NotFound,
+                Now(),
+                $"Keycloak group '{groupName.Trim()}' was not found."),
+            1 => Success<IExternalGroupReference>(
+                new ExternalGroupReference(Provider, Realm, matches[0].Id!)),
+            _ => ExternalDirectoryResult<IExternalGroupReference>.Failure(
+                ExternalDirectoryStatus.Misconfigured,
+                Now(),
+                $"More than one Keycloak group is named '{groupName.Trim()}'. Configure its group ID instead.")
+        };
+    }
+
     public void Dispose()
     {
         _tokenLock.Dispose();
@@ -307,6 +349,18 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
         }
     }
 
+    private static IEnumerable<GroupRepresentation> FlattenGroups(IEnumerable<GroupRepresentation> groups)
+    {
+        foreach (var group in groups)
+        {
+            yield return group;
+            foreach (var subgroup in FlattenGroups(group.SubGroups ?? []))
+            {
+                yield return subgroup;
+            }
+        }
+    }
+
     private ExternalDirectoryResult<T> Success<T>(T value)
     {
         var observedAt = Now();
@@ -411,5 +465,7 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
     private sealed class GroupRepresentation
     {
         public string? Id { get; init; }
+        public string? Name { get; init; }
+        public List<GroupRepresentation>? SubGroups { get; init; }
     }
 }

@@ -107,6 +107,37 @@ public sealed class KeycloakExternalIdentityDirectoryTests
         Assert.Equal(2, handler.Requests.Count(request => request.Method == HttpMethod.Get));
     }
 
+    [Fact]
+    public async Task ResolveGroup_TranslatesAnExactNameToItsKeycloakId()
+    {
+        var handler = AuthenticatedHandler("""
+            [{"id":"parent","name":"teams","subGroups":[{"id":"member-uuid","name":"adr-campus-members"}]}]
+            """);
+        using var directory = CreateDirectory(handler);
+
+        var result = await directory.ResolveGroupAsync("adr-campus-members");
+
+        Assert.Equal(ExternalDirectoryStatus.Success, result.Status);
+        Assert.Equal("member-uuid", result.Value!.GroupId);
+        Assert.Contains("search=adr-campus-members", handler.Requests[1].RequestUri!.Query);
+        Assert.Contains("exact=true", handler.Requests[1].RequestUri!.Query);
+    }
+
+    [Fact]
+    public async Task ResolveGroup_RejectsAnAmbiguousName()
+    {
+        var handler = AuthenticatedHandler("""
+            [{"id":"group-1","name":"members"},{"id":"group-2","name":"members"}]
+            """);
+        using var directory = CreateDirectory(handler);
+
+        var result = await directory.ResolveGroupAsync("members");
+
+        Assert.Equal(ExternalDirectoryStatus.Misconfigured, result.Status);
+        Assert.Null(result.Value);
+        Assert.Contains("More than one", result.FailureReason);
+    }
+
     private static KeycloakExternalIdentityDirectory CreateDirectory(StubHandler handler) =>
         new(new HttpClient(handler), new KeycloakOptions
         {
