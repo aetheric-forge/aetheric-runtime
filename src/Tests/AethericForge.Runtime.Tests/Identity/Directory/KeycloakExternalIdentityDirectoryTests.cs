@@ -141,7 +141,7 @@ public sealed class KeycloakExternalIdentityDirectoryTests
     private static KeycloakExternalIdentityDirectory CreateDirectory(StubHandler handler) =>
         new(new HttpClient(handler), new KeycloakOptions
         {
-            Authority = "https://id.example/realms/campus",
+            Authority = "https://id.example",
             Realm = "campus",
             ClientId = "runtime",
             ClientSecret = "secret"

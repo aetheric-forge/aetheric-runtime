@@ -32,7 +32,7 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         ArgumentNullException.ThrowIfNull(options);
 
-        var authority = RequiredAbsoluteUri(options.Authority, nameof(options.Authority));
+        var serverBase = RequiredAbsoluteUri(options.Authority, nameof(options.Authority));
         _clientId = Required(options.ClientId, nameof(options.ClientId));
         _clientSecret = Required(options.ClientSecret, nameof(options.ClientSecret));
         Realm = Required(options.Realm, nameof(options.Realm));
@@ -46,9 +46,10 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
         }
 
         _timeProvider = timeProvider ?? TimeProvider.System;
-        _tokenEndpoint = new Uri(EnsureTrailingSlash(authority), "protocol/openid-connect/token");
+        var realmAuthority = new Uri(EnsureTrailingSlash(serverBase), $"realms/{Uri.EscapeDataString(Realm)}/");
+        _tokenEndpoint = new Uri(realmAuthority, "protocol/openid-connect/token");
         var adminBase = string.IsNullOrWhiteSpace(options.AdminApiBaseAddress)
-            ? DeriveAdminApiBaseAddress(authority)
+            ? new Uri(EnsureTrailingSlash(serverBase), "admin/")
             : RequiredAbsoluteUri(options.AdminApiBaseAddress, nameof(options.AdminApiBaseAddress));
         _adminRealmEndpoint = new Uri(
             EnsureTrailingSlash(adminBase),
@@ -396,20 +397,6 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
             throw new ArgumentException("An absolute HTTP or HTTPS URI is required.", parameterName);
         }
         return uri;
-    }
-
-    private static Uri DeriveAdminApiBaseAddress(Uri authority)
-    {
-        var marker = "/realms/";
-        var index = authority.AbsolutePath.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-        if (index < 0)
-        {
-            throw new ArgumentException(
-                "Authority must contain '/realms/' when AdminApiBaseAddress is not supplied.",
-                nameof(KeycloakOptions.Authority));
-        }
-        var builder = new UriBuilder(authority) { Path = authority.AbsolutePath[..index] + "/admin/", Query = "", Fragment = "" };
-        return builder.Uri;
     }
 
     private static ExternalDirectoryStatus MapStatus(HttpStatusCode statusCode) => statusCode switch
