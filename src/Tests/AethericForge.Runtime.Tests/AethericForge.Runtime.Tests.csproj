@@ -47,6 +47,8 @@
     <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Faculty\AethericForge.Runtime.Services.Faculty.csproj" />
     <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.Maintenance\AethericForge.Runtime.Institutions.Maintenance.csproj" />
     <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.Maintenance\AethericForge.Runtime.Services.Maintenance.csproj" />
+    <ProjectReference Include="..\..\Institutions\AethericForge.Runtime.Institutions.IssueReports\AethericForge.Runtime.Institutions.IssueReports.csproj" />
+    <ProjectReference Include="..\..\Services\AethericForge.Runtime.Services.IssueReports\AethericForge.Runtime.Services.IssueReports.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="IssueReproductionTests.cs" />
