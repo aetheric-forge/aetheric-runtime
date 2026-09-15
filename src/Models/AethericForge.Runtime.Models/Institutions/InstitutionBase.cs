@@ -10,6 +10,7 @@ namespace AethericForge.Runtime.Models.Institutions;
 public abstract class InstitutionBase(IInstitutionContext context) : IInstitution
 {
     private readonly Dictionary<Type, IInstitution> _institutions = new();
+    private readonly Dictionary<string, IOrganization> _organizations = new();
 
     public IInstitutionContext Context { get; } = context ?? throw new ArgumentNullException(nameof(context));
 
@@ -66,7 +67,54 @@ public abstract class InstitutionBase(IInstitutionContext context) : IInstitutio
             $"'{typeof(TInstitution).FullName}' in this institutional scope " +
             $"or any ancestor scope.");
     }
-    
+
+    public void RegisterOrganization(string id, IOrganization organization)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentNullException.ThrowIfNull(organization);
+
+        if (!ReferenceEquals(organization.Context.Owner, this))
+        {
+            throw new ArgumentException(
+                "The registered organization must be owned by this institutional scope.",
+                nameof(organization));
+        }
+
+        if (!_organizations.TryAdd(id, organization))
+        {
+            throw new InvalidOperationException(
+                $"An organization is already registered under id '{id}' in this institutional scope.");
+        }
+    }
+
+    public bool TryResolveOrganization<TOrganization>(
+        string id,
+        [NotNullWhen(true)] out TOrganization? organization)
+        where TOrganization : class, IOrganization
+    {
+        if (_organizations.TryGetValue(id, out var registered) && registered is TOrganization typed)
+        {
+            organization = typed;
+            return true;
+        }
+
+        organization = null;
+        return false;
+    }
+
+    public TOrganization ResolveOrganization<TOrganization>(string id)
+        where TOrganization : class, IOrganization
+    {
+        if (TryResolveOrganization<TOrganization>(id, out var organization))
+        {
+            return organization;
+        }
+
+        throw new KeyNotFoundException(
+            $"No organization registered under id '{id}' with contract " +
+            $"'{typeof(TOrganization).FullName}' in this institutional scope.");
+    }
+
     public virtual Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;
@@ -87,6 +135,24 @@ public class InstitutionContext(IInstitutionTemplate template, IServiceProvider 
     : IInstitutionContext
 {
     public IInstitution? Parent { get; } = parent;
+    public IInstitutionTemplate Template { get; } = template ?? throw new ArgumentNullException(nameof(template));
+    public IServiceProvider Services { get; } = services ?? throw new ArgumentNullException(nameof(services));
+}
+
+/// <summary>
+/// Base implementation for a concrete Organization. Deliberately carries only the context an Organization
+/// needs - no registration/resolution of its own, since Organizations do not compose further Institutions
+/// or Organizations and are not part of ancestor-scope capability resolution.
+/// </summary>
+public abstract class OrganizationBase(IOrganizationContext context) : IOrganization
+{
+    public IOrganizationContext Context { get; } = context ?? throw new ArgumentNullException(nameof(context));
+}
+
+public class OrganizationContext(IInstitutionTemplate template, IServiceProvider services, IInstitution owner)
+    : IOrganizationContext
+{
+    public IInstitution Owner { get; } = owner ?? throw new ArgumentNullException(nameof(owner));
     public IInstitutionTemplate Template { get; } = template ?? throw new ArgumentNullException(nameof(template));
     public IServiceProvider Services { get; } = services ?? throw new ArgumentNullException(nameof(services));
 }

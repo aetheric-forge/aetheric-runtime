@@ -7,4 +7,5 @@ namespace AethericForge.Runtime.Institutions.Plugins;
 /// </summary>
 public sealed record LoadedInstitutionPlugin(
     string AssemblyPath,
-    IReadOnlyCollection<IInstitutionFactory> Factories);
+    IReadOnlyCollection<IInstitutionFactory> Factories,
+    IReadOnlyCollection<IOrganizationFactory> OrganizationFactories);

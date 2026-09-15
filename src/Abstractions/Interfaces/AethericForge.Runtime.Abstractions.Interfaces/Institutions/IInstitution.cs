@@ -16,6 +16,21 @@ public interface IInstitution
     TInstitution Resolve<TInstitution>()
         where TInstitution : class, IInstitution;
 
+    /// <summary>
+    /// Registers an Organization under this Institution's scope, keyed by <paramref name="id"/> rather
+    /// than by exclusive contract type - unlike <see cref="Register{TInstitution}"/>, several
+    /// Organizations of the same shape can coexist here under different ids.
+    /// </summary>
+    void RegisterOrganization(string id, IOrganization organization);
+
+    bool TryResolveOrganization<TOrganization>(
+        string id,
+        [NotNullWhen(true)] out TOrganization? organization)
+        where TOrganization : class, IOrganization;
+
+    TOrganization ResolveOrganization<TOrganization>(string id)
+        where TOrganization : class, IOrganization;
+
     Task InitializeAsync(
         CancellationToken cancellationToken = default);
 
