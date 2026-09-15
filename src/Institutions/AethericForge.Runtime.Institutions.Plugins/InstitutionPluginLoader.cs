@@ -72,12 +72,15 @@ public sealed class InstitutionPluginLoader(ILogger<InstitutionPluginLoader>? lo
         }
 
         var factories = package.GetFactories();
+        var organizationFactories = package.GetOrganizationFactories();
 
         _logger.LogInformation(
-            "Loaded Institution plugin {AssemblyPath} exposing {FactoryCount} factory(ies).",
+            "Loaded Institution plugin {AssemblyPath} exposing {FactoryCount} factory(ies) and " +
+            "{OrganizationFactoryCount} organization factory(ies).",
             assemblyPath,
-            factories.Count);
+            factories.Count,
+            organizationFactories.Count);
 
-        return new LoadedInstitutionPlugin(assemblyPath, factories);
+        return new LoadedInstitutionPlugin(assemblyPath, factories, organizationFactories);
     }
 }

@@ -7,4 +7,10 @@ namespace AethericForge.Runtime.Abstractions.Interfaces.Institutions.Plugins;
 public interface IInstitutionPluginPackage
 {
     IReadOnlyCollection<IInstitutionFactory> GetFactories();
+
+    /// <summary>
+    /// Organization factories this package exposes, if any. Defaults to none so existing packages built
+    /// against the Institution-only shape of this interface keep compiling unchanged.
+    /// </summary>
+    IReadOnlyCollection<IOrganizationFactory> GetOrganizationFactories() => [];
 }
