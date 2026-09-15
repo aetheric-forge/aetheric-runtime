@@ -7,5 +7,5 @@ namespace AethericForge.Runtime.Institutions.Decisions;
 public sealed class DecisionsContext(
     IInstitutionTemplate template,
     IServiceProvider services,
-    IInstitution? parent = null)
-    : InstitutionContext(template, services, parent), IDecisionsContext;
+    IInstitution owner)
+    : OrganizationContext(template, services, owner), IDecisionsContext;
