@@ -6,13 +6,19 @@ using AethericForge.Runtime.Models.Institutions;
 
 namespace AethericForge.Runtime.Institutions.Registry;
 
-public sealed class Registry(IRegistryContext context, IRegistryService registryService, IRegistrar registrar) 
+public sealed class Registry(
+    IRegistryContext context,
+    IRegistryService registryService,
+    IRegistrar registrar,
+    IRegistryClerk clerk)
     : InstitutionBase(context), IRegistry
 {
-    private readonly IRegistryService _registryService = 
+    private readonly IRegistryService _registryService =
         registryService ?? throw new ArgumentNullException(nameof(registryService));
 
     public new IRegistryContext Context => (IRegistryContext)base.Context;
-    
+
     public IRegistrar Registrar { get; } = registrar ?? throw new ArgumentNullException(nameof(registrar));
+
+    public IRegistryClerk Clerk { get; } = clerk ?? throw new ArgumentNullException(nameof(clerk));
 }
