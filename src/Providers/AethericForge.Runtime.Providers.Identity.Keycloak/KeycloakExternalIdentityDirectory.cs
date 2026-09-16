@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace AethericForge.Runtime.Providers.Identity.Keycloak;
 
@@ -14,15 +13,9 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
     private const int PageSize = 100;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly HttpClient _httpClient;
-    private readonly Uri _tokenEndpoint;
-    private readonly Uri _adminRealmEndpoint;
-    private readonly string _clientId;
-    private readonly string _clientSecret;
+    private readonly KeycloakAdminAccess _access;
     private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _freshnessLifetime;
-    private readonly SemaphoreSlim _tokenLock = new(1, 1);
-    private string? _accessToken;
-    private DateTimeOffset _accessTokenExpiresAtUtc;
 
     public KeycloakExternalIdentityDirectory(
         HttpClient httpClient,
@@ -32,10 +25,6 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         ArgumentNullException.ThrowIfNull(options);
 
-        var serverBase = RequiredAbsoluteUri(options.Authority, nameof(options.Authority));
-        _clientId = Required(options.ClientId, nameof(options.ClientId));
-        _clientSecret = Required(options.ClientSecret, nameof(options.ClientSecret));
-        Realm = Required(options.Realm, nameof(options.Realm));
         _freshnessLifetime = options.DirectoryFreshnessLifetime;
         if (_freshnessLifetime < TimeSpan.Zero)
         {
@@ -46,14 +35,8 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
         }
 
         _timeProvider = timeProvider ?? TimeProvider.System;
-        var realmAuthority = new Uri(EnsureTrailingSlash(serverBase), $"realms/{Uri.EscapeDataString(Realm)}/");
-        _tokenEndpoint = new Uri(realmAuthority, "protocol/openid-connect/token");
-        var adminBase = string.IsNullOrWhiteSpace(options.AdminApiBaseAddress)
-            ? new Uri(EnsureTrailingSlash(serverBase), "admin/")
-            : RequiredAbsoluteUri(options.AdminApiBaseAddress, nameof(options.AdminApiBaseAddress));
-        _adminRealmEndpoint = new Uri(
-            EnsureTrailingSlash(adminBase),
-            $"realms/{Uri.EscapeDataString(Realm)}/");
+        _access = new KeycloakAdminAccess(httpClient, options, _timeProvider);
+        Realm = _access.Realm;
     }
 
     public string Provider => "Keycloak";
@@ -172,7 +155,7 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
 
     public void Dispose()
     {
-        _tokenLock.Dispose();
+        _access.Dispose();
     }
 
     private async Task<IExternalDirectoryResult<IExternalIdentity>> GetIdentityCoreAsync(
@@ -192,11 +175,11 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
         string token;
         try
         {
-            token = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            token = await _access.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (KeycloakDirectoryException exception)
+        catch (KeycloakAdminAccessException exception)
         {
-            return ApiResult<T>.Failure(exception.Status, exception.Message);
+            return ApiResult<T>.Failure(MapTokenStatus(exception.StatusCode), exception.Message);
         }
         catch (HttpRequestException exception)
         {
@@ -211,7 +194,7 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
             return ApiResult<T>.Failure(ExternalDirectoryStatus.Misconfigured, exception.Message);
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(_adminRealmEndpoint, relativePath));
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(_access.AdminRealmEndpoint, relativePath));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         try
         {
@@ -260,55 +243,6 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
             {
                 return ApiResult<List<T>>.Success(values);
             }
-        }
-    }
-
-    private async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
-    {
-        var now = Now();
-        if (_accessToken is not null && _accessTokenExpiresAtUtc > now.AddSeconds(15))
-        {
-            return _accessToken;
-        }
-
-        await _tokenLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            now = Now();
-            if (_accessToken is not null && _accessTokenExpiresAtUtc > now.AddSeconds(15))
-            {
-                return _accessToken;
-            }
-
-            using var content = new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["grant_type"] = "client_credentials",
-                ["client_id"] = _clientId,
-                ["client_secret"] = _clientSecret
-            });
-            using var response = await _httpClient.PostAsync(_tokenEndpoint, content, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new KeycloakDirectoryException(
-                    MapTokenStatus(response.StatusCode),
-                    await FailureReasonAsync(response, cancellationToken).ConfigureAwait(false));
-            }
-
-            var token = await response.Content.ReadFromJsonAsync<TokenResponse>(JsonOptions, cancellationToken).ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(token?.AccessToken))
-            {
-                throw new KeycloakDirectoryException(
-                    ExternalDirectoryStatus.Misconfigured,
-                    "Keycloak did not return an access token.");
-            }
-
-            _accessToken = token.AccessToken;
-            _accessTokenExpiresAtUtc = now.AddSeconds(Math.Max(0, token.ExpiresIn));
-            return _accessToken;
-        }
-        finally
-        {
-            _tokenLock.Release();
         }
     }
 
@@ -380,24 +314,6 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
 
     private DateTimeOffset Now() => _timeProvider.GetUtcNow();
     private static string Escape(string value) => Uri.EscapeDataString(value);
-    private static Uri EnsureTrailingSlash(Uri value) =>
-        value.AbsoluteUri.EndsWith('/') ? value : new Uri(value.AbsoluteUri + "/");
-
-    private static string Required(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Value is required.", parameterName);
-        return value.Trim();
-    }
-
-    private static Uri RequiredAbsoluteUri(string value, string parameterName)
-    {
-        if (!Uri.TryCreate(Required(value, parameterName), UriKind.Absolute, out var uri) ||
-            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-        {
-            throw new ArgumentException("An absolute HTTP or HTTPS URI is required.", parameterName);
-        }
-        return uri;
-    }
 
     private static ExternalDirectoryStatus MapStatus(HttpStatusCode statusCode) => statusCode switch
     {
@@ -407,7 +323,7 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
         _ => ExternalDirectoryStatus.Unavailable
     };
 
-    private static ExternalDirectoryStatus MapTokenStatus(HttpStatusCode statusCode) => statusCode switch
+    private static ExternalDirectoryStatus MapTokenStatus(HttpStatusCode? statusCode) => statusCode switch
     {
         HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => ExternalDirectoryStatus.Misconfigured,
         _ => ExternalDirectoryStatus.Unavailable
@@ -424,18 +340,6 @@ public sealed class KeycloakExternalIdentityDirectory : IExternalIdentityDirecto
     {
         public static ApiResult<T> Success(T value) => new(true, value, ExternalDirectoryStatus.Success, null);
         public static ApiResult<T> Failure(ExternalDirectoryStatus status, string? reason) => new(false, default, status, reason);
-    }
-
-    private sealed class KeycloakDirectoryException(ExternalDirectoryStatus status, string? message)
-        : Exception(message)
-    {
-        public ExternalDirectoryStatus Status { get; } = status;
-    }
-
-    private sealed class TokenResponse
-    {
-        [JsonPropertyName("access_token")] public string? AccessToken { get; init; }
-        [JsonPropertyName("expires_in")] public int ExpiresIn { get; init; }
     }
 
     private sealed class UserRepresentation

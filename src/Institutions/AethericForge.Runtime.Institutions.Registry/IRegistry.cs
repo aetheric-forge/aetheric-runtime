@@ -12,4 +12,7 @@ namespace AethericForge.Runtime.Institutions.Registry;
 public interface IRegistry : IInstitution
 {
     IRegistrar Registrar { get; }
+
+    /// <summary>The write-side actor for this Registry - registers clients and manages roles/groups/permissions.</summary>
+    IRegistryClerk Clerk { get; }
 }
