@@ -11,6 +11,20 @@ namespace AethericForge.Runtime.Abstractions.Interfaces.Identity.Services;
 /// </summary>
 public interface IRegistryClerk
 {
+    /// <summary>Never returns a client secret - see <see cref="IClientRegistration.Secret"/>.</summary>
+    Task<IRegistryOperationResult<IClientRegistration>> GetClientAsync(
+        string clientId,
+        CancellationToken ct = default);
+
+    Task<IRegistryOperationResult<IRole>> GetRoleAsync(
+        string name,
+        CancellationToken ct = default);
+
+    /// <param name="path">The group's full path, as returned on <see cref="IGroup.Path"/>.</param>
+    Task<IRegistryOperationResult<IGroup>> GetGroupAsync(
+        string path,
+        CancellationToken ct = default);
+
     Task<IRegistryOperationResult<IClientRegistration>> RegisterClientAsync(
         ClientRegistrationRequest request,
         CancellationToken ct = default);

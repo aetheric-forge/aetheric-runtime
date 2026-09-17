@@ -38,6 +38,34 @@ public sealed class KeycloakRegistryClerk : IRegistryClerk, IDisposable
 
     public void Dispose() => _access.Dispose();
 
+    public Task<IRegistryOperationResult<IClientRegistration>> GetClientAsync(
+        string clientId,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientId);
+        return LoadClientAsync(clientId, includeSecret: false, ct);
+    }
+
+    public async Task<IRegistryOperationResult<IRole>> GetRoleAsync(string name, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        var role = await FindRoleRepresentationAsync(name, ct).ConfigureAwait(false);
+        return role.IsSuccess
+            ? RegistryOperationResult<IRole>.Succeeded(new Role(role.Value!.Name!))
+            : Failure<IRole>(role.Status, role.FailureReason!);
+    }
+
+    public async Task<IRegistryOperationResult<IGroup>> GetGroupAsync(string path, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        var group = await FindGroupRepresentationByPathAsync(path, ct).ConfigureAwait(false);
+        return group.IsSuccess
+            ? RegistryOperationResult<IGroup>.Succeeded(new Group(group.Value!.Name!, group.Value.Path!))
+            : Failure<IGroup>(group.Status, group.FailureReason!);
+    }
+
     public async Task<IRegistryOperationResult<IClientRegistration>> RegisterClientAsync(
         ClientRegistrationRequest request,
         CancellationToken ct = default)

@@ -10,6 +10,95 @@ namespace AethericForge.Runtime.Tests.Identity.Keycloak;
 public sealed class KeycloakRegistryClerkTests
 {
     [Fact]
+    public async Task GetClient_ReturnsTheClientWithoutFetchingItsSecret()
+    {
+        var handler = new RoutedStubHandler();
+        handler.OnToken();
+        handler.On(HttpMethod.Get, "clients", Json(HttpStatusCode.OK, """
+            [{"id":"internal-1","clientId":"aetheric-admin","enabled":true,"publicClient":false}]
+            """));
+        using var clerk = CreateClerk(handler);
+
+        var result = await clerk.GetClientAsync("aetheric-admin");
+
+        Assert.Equal(RegistryOperationStatus.Succeeded, result.Status);
+        Assert.Equal("aetheric-admin", result.Value!.ClientId);
+        Assert.Null(result.Value.Secret);
+        Assert.DoesNotContain(handler.Requests, r => r.RequestUri!.AbsolutePath.Contains("client-secret", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GetClient_AnUnknownClientIdIsNotFound()
+    {
+        var handler = new RoutedStubHandler();
+        handler.OnToken();
+        handler.On(HttpMethod.Get, "clients", Json(HttpStatusCode.OK, "[]"));
+        using var clerk = CreateClerk(handler);
+
+        var result = await clerk.GetClientAsync("missing-client");
+
+        Assert.Equal(RegistryOperationStatus.NotFound, result.Status);
+        Assert.Null(result.Value);
+    }
+
+    [Fact]
+    public async Task GetRole_ReturnsAnExistingRole()
+    {
+        var handler = new RoutedStubHandler();
+        handler.OnToken();
+        handler.On(HttpMethod.Get, "roles/provisioner-admin", Json(HttpStatusCode.OK, """{"id":"role-1","name":"provisioner-admin"}"""));
+        using var clerk = CreateClerk(handler);
+
+        var result = await clerk.GetRoleAsync("provisioner-admin");
+
+        Assert.Equal(RegistryOperationStatus.Succeeded, result.Status);
+        Assert.Equal("provisioner-admin", result.Value!.Name);
+    }
+
+    [Fact]
+    public async Task GetRole_AnUnknownRoleIsNotFound()
+    {
+        var handler = new RoutedStubHandler();
+        handler.OnToken();
+        handler.On(HttpMethod.Get, "roles/ghost-role", Json(HttpStatusCode.NotFound, "not found"));
+        using var clerk = CreateClerk(handler);
+
+        var result = await clerk.GetRoleAsync("ghost-role");
+
+        Assert.Equal(RegistryOperationStatus.NotFound, result.Status);
+        Assert.Null(result.Value);
+    }
+
+    [Fact]
+    public async Task GetGroup_ReturnsAnExistingGroupByExactPath()
+    {
+        var handler = new RoutedStubHandler();
+        handler.OnToken();
+        handler.On(HttpMethod.Get, "groups", Json(HttpStatusCode.OK, """[{"id":"group-1","name":"teams","path":"/teams"}]"""));
+        using var clerk = CreateClerk(handler);
+
+        var result = await clerk.GetGroupAsync("/teams");
+
+        Assert.Equal(RegistryOperationStatus.Succeeded, result.Status);
+        Assert.Equal("teams", result.Value!.Name);
+        Assert.Equal("/teams", result.Value.Path);
+    }
+
+    [Fact]
+    public async Task GetGroup_AnUnknownPathIsNotFound()
+    {
+        var handler = new RoutedStubHandler();
+        handler.OnToken();
+        handler.On(HttpMethod.Get, "groups", Json(HttpStatusCode.OK, "[]"));
+        using var clerk = CreateClerk(handler);
+
+        var result = await clerk.GetGroupAsync("/does-not-exist");
+
+        Assert.Equal(RegistryOperationStatus.NotFound, result.Status);
+        Assert.Null(result.Value);
+    }
+
+    [Fact]
     public async Task RegisterClient_CreatesAConfidentialClientAndReturnsItsSecret()
     {
         var handler = new RoutedStubHandler();
