@@ -1,0 +1,162 @@
+# Hand-authored, not generated - Campus has no C# OfficeDefinition/IOfficePackage-style source the
+# way adr-campus's Decisions institution does (that abstraction is scoped to descendant "offices",
+# not the root). Validated against aetheric-provisioning's InstitutionYamlReader schema.
+# YAML 1.2 (JSON flow syntax), matching adr-campus's institution definitions.
+#
+# Models the five Institutions Constitutional Article VI requires every Campus to maintain -
+# Archive (docs/specs/archive.md), Library (docs/specs/library.md), Post Office
+# (docs/specs/post.md), Registry/Registrar (docs/specs/registrar.md; the code and folder name is
+# "Registry", the constitutional article calls the office "Registrar" - same name, two spellings),
+# and Workbench (docs/specs/workbench.md) - plus Faculty, which campus.md doesn't mention but is a
+# real runtime Institution (AethericForge.Runtime.Institutions.Faculty) with no constitutional
+# article of its own yet. Note: campus.md §10 itself only lists Archive/Library/Post
+# Office/Registrar; workbench.md §2 separately claims Workbench as campus-mandatory too. This
+# definition follows the union of both (all five), not campus.md's incomplete list.
+#
+# Faculty is not resource-backed (it groups descendant Institutions under a Dean; it owns no
+# external infrastructure), so unlike the other five it has a capability but no "resources" entry.
+{
+  "descriptor": {
+    "id": "campus",
+    "name": "Campus",
+    "version": "1.0.0",
+    "description": "The unique root Institution of an institutional hierarchy (Constitutional Article VI). Maintains an Archive, Library, Post Office, Registry, and Workbench, and composes descendant Institutions through Faculties."
+  },
+  "domains": [
+    {
+      "id": "archive-stewardship",
+      "name": "Archive Stewardship",
+      "description": "Preserving the constitutional record of the Campus and the Institutions within its hierarchy.",
+      "requiredCapabilities": [
+        "provide-archive"
+      ]
+    },
+    {
+      "id": "knowledge-stewardship",
+      "name": "Knowledge Stewardship",
+      "description": "Collecting, organizing, and making knowledge discoverable across the institutional hierarchy.",
+      "requiredCapabilities": [
+        "provide-library"
+      ]
+    },
+    {
+      "id": "communication",
+      "name": "Communication",
+      "description": "Conveying Post between Participants within the institutional hierarchy.",
+      "requiredCapabilities": [
+        "provide-post-office"
+      ]
+    },
+    {
+      "id": "identity-and-standing",
+      "name": "Identity and Standing",
+      "description": "Recording and attesting the institutional facts - identities, roles, relationships, credentials - recognized within the Campus.",
+      "requiredCapabilities": [
+        "provide-registry"
+      ]
+    },
+    {
+      "id": "work-and-production",
+      "name": "Work and Production",
+      "description": "Staging and coordinating work before it is published, registered, or archived.",
+      "requiredCapabilities": [
+        "provide-workbench"
+      ]
+    },
+    {
+      "id": "organizational-composition",
+      "name": "Organizational Composition",
+      "description": "Grouping descendant Institutions under a Faculty and Dean beneath the Campus.",
+      "requiredCapabilities": [
+        "compose-faculty"
+      ]
+    }
+  ],
+  "organizations": [],
+  "roles": [],
+  "capabilities": [
+    {
+      "id": "provide-archive",
+      "name": "Provide Archive",
+      "description": "Maintain and expose the Campus's Archive so descendant Institutions may preserve their constitutional and operational history through it."
+    },
+    {
+      "id": "provide-library",
+      "name": "Provide Library",
+      "description": "Maintain and expose the Campus's Library so descendant Institutions may curate and discover shared knowledge through it."
+    },
+    {
+      "id": "provide-post-office",
+      "name": "Provide Post Office",
+      "description": "Maintain and expose the Campus's Post Office so Participants may exchange Post within the institutional hierarchy."
+    },
+    {
+      "id": "provide-registry",
+      "name": "Provide Registry",
+      "description": "Maintain and expose the Campus's Registry so descendant Institutions may establish authoritative identities, roles, and other institutional facts through it."
+    },
+    {
+      "id": "provide-workbench",
+      "name": "Provide Workbench",
+      "description": "Maintain and expose the Campus's Workbench so descendant Institutions may stage and coordinate work before it is published, registered, or archived."
+    },
+    {
+      "id": "compose-faculty",
+      "name": "Compose Faculty",
+      "description": "Group descendant Institutions under a Faculty and Dean for organizational composition beneath the Campus."
+    }
+  ],
+  "resources": [
+    {
+      "id": "archive",
+      "name": "Archive",
+      "description": "The constitutional record of the Campus's existence, preserving history, decisions, and constitutional state across time.",
+      "type": "archive",
+      "ownership": "owned"
+    },
+    {
+      "id": "library",
+      "name": "Library",
+      "description": "The curated body of works, references, and resources the Campus makes discoverable and reusable.",
+      "type": "knowledge",
+      "ownership": "owned"
+    },
+    {
+      "id": "post-office",
+      "name": "Post Office",
+      "description": "The governed conveyance of Messages between Participants within the institutional hierarchy.",
+      "type": "post",
+      "ownership": "owned"
+    },
+    {
+      "id": "registry",
+      "name": "Registry",
+      "description": "The authoritative record of identities, roles, relationships, credentials, and other institutional facts recognized within the Campus.",
+      "type": "identity",
+      "ownership": "owned"
+    },
+    {
+      "id": "workbench",
+      "name": "Workbench",
+      "description": "The governed environment in which materials, knowledge, and other resources are assembled, examined, and prepared into works before publication, registration, or archival.",
+      "type": "staging",
+      "ownership": "owned"
+    }
+  ],
+  "workflows": [],
+  "policies": [
+    {
+      "id": "root-authority",
+      "name": "Root Authority",
+      "description": "The Campus possesses no parent Institution and represents the highest level of structural authority within its own hierarchy (Article VI §3)."
+    },
+    {
+      "id": "explicit-containment",
+      "name": "Explicit Containment",
+      "description": "Institutional containment SHALL NOT be inferred from communication, collaboration, governance, or operational interaction; only explicit parent-child relationships define structural containment (Article VI §5)."
+    }
+  ],
+  "initialState": {
+    "configuration": {}
+  }
+}

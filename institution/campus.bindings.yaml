@@ -1,0 +1,44 @@
+# Example "development" deployment bindings for institution/campus.yaml. A real deployment
+# supplies its own bindings document; this one exists to show the expected shape and to let the
+# definition be exercised locally.
+#
+# Only "workbench" has a real Aetheric.Provisioning IResourceProvider today (Redis-backed,
+# Aetheric.Provisioning.Workbench.Redis). archive/library/post-office/registry name providers
+# ("s3"/"mongodb"/"rabbitmq"/"keycloak") that don't exist yet in aetheric-provisioning - building
+# them is separately roadmapped ("Demand-driven expansion" in docs/roadmap.md). Until they land,
+# ProvisioningPlanner.Plan() against this document will report provider.unsupported for those four
+# resources - that's expected, not a defect in this binding. The planner has no partial/best-effort
+# mode, so a plan against the whole campus fails wholesale rather than skipping just those steps;
+# planning workbench alone (a bindings document with only that one resource) works today.
+#
+# "workbench"'s target must match whatever target string the host's WorkbenchProvider is
+# constructed with (WorkbenchProvider(string target, ...) - a fixed identity supplied by the host,
+# not something this document can know in the abstract). "campus" is a placeholder.
+{
+  "institution": "campus",
+  "version": "1.0.0",
+  "deployment": {
+    "name": "development"
+  },
+  "bindings": {
+    "archive": {
+      "provider": "s3"
+    },
+    "library": {
+      "provider": "mongodb"
+    },
+    "post-office": {
+      "provider": "rabbitmq"
+    },
+    "registry": {
+      "provider": "keycloak"
+    },
+    "workbench": {
+      "provider": "workbench",
+      "backing": "redis",
+      "target": "campus",
+      "stage": "campus",
+      "fallback": "none"
+    }
+  }
+}
