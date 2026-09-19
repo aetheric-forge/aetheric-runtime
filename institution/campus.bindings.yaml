@@ -2,15 +2,19 @@
 # supplies its own bindings document; this one exists to show the expected shape and to let the
 # definition be exercised locally.
 #
-# "workbench", "post-office", "library", and "registry" have real Aetheric.Provisioning
-# IResourceProviders today (Redis-backed Aetheric.Provisioning.Workbench.Redis; RabbitMQ-
-# management-API-backed Aetheric.Provisioning.RabbitMq; MongoDB-backed Aetheric.Provisioning.MongoDb;
-# Keycloak-admin-API-backed Aetheric.Provisioning.Keycloak). archive names a provider ("s3") that
-# doesn't exist yet - building it is separately roadmapped ("Demand-driven expansion" in
-# docs/roadmap.md). Until it lands, ProvisioningPlanner.Plan() against this document will report
-# provider.unsupported for that resource - that's expected, not a defect in this binding. The
-# planner has no partial/best-effort mode, so a plan against the whole campus fails wholesale
-# rather than skipping just that step; planning any subset of the other four alone works today.
+# All five resources now have real Aetheric.Provisioning IResourceProviders (Redis-backed
+# Aetheric.Provisioning.Workbench.Redis; RabbitMQ-management-API-backed
+# Aetheric.Provisioning.RabbitMq; MongoDB-backed Aetheric.Provisioning.MongoDb; Keycloak-admin-
+# API-backed Aetheric.Provisioning.Keycloak; S3/MinIO-backed Aetheric.Provisioning.S3) - Stage 6
+# is complete. Whether a plan against this whole document succeeds end to end depends on how the
+# providers are constructed: Workbench's backend takes a host-injected connection rather than a
+# per-request credential (RedisWorkbenchBackend(IDatabase database)), so
+# Aetheric.Provisioning.Worker's CampusDeploymentRequestConsumer - which builds the other four
+# providers fresh per message from CampusDeploymentRequested.RootCredentials - deliberately
+# doesn't build a Workbench provider at all; driven through that Worker, a whole-campus plan still
+# reports provider.unsupported for Workbench specifically. Planning archive/library/post-office/
+# registry together (any subset, or all four) succeeds today; Workbench needs a host that composes
+# it directly, matching how AddForgeCampus already wires it into aetheric-web/aetheric-admin.
 #
 # "workbench"'s target must match whatever target string the host's WorkbenchProvider is
 # constructed with (WorkbenchProvider(string target, ...) - a fixed identity supplied by the host,
@@ -23,7 +27,8 @@
   },
   "bindings": {
     "archive": {
-      "provider": "s3"
+      "provider": "s3",
+      "bucket": "campus-archive"
     },
     "library": {
       "provider": "mongodb",

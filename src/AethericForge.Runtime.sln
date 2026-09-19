@@ -169,6 +169,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetheric.Provisioning.Mongo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetheric.Provisioning.Keycloak", "Provisioning\Aetheric.Provisioning.Keycloak\Aetheric.Provisioning.Keycloak.csproj", "{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetheric.Provisioning.S3", "Provisioning\Aetheric.Provisioning.S3\Aetheric.Provisioning.S3.csproj", "{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -831,6 +833,18 @@ Global
 		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Release|x64.Build.0 = Release|Any CPU
 		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Release|x86.ActiveCfg = Release|Any CPU
 		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Release|x86.Build.0 = Release|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Debug|x64.Build.0 = Debug|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Debug|x86.Build.0 = Debug|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Release|x64.ActiveCfg = Release|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Release|x64.Build.0 = Release|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Release|x86.ActiveCfg = Release|Any CPU
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -899,5 +913,6 @@ Global
 		{8665567A-C124-4728-898A-BBE39FB19272} = {1F096E01-38E5-0D93-8393-C3F1D835DC64}
 		{B8E75CD3-42AB-48FC-B7A5-2ECAE9408AA7} = {1F096E01-38E5-0D93-8393-C3F1D835DC64}
 		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F} = {1F096E01-38E5-0D93-8393-C3F1D835DC64}
+		{AB12AE7B-DB33-400B-8C4A-17FE07E8A10B} = {1F096E01-38E5-0D93-8393-C3F1D835DC64}
 	EndGlobalSection
 EndGlobal

@@ -95,12 +95,17 @@ public sealed record RabbitMqRootOptions(string Scheme = "http", string BasePath
 // other root credentials (Postgres/Mongo/RabbitMQ) are all an actual admin superuser, not a
 // pre-provisioned service-account client the operator would otherwise have to set up by hand.
 public sealed record KeycloakRootOptions(string Scheme = "https", string BasePath = "/", string Realm = "master", string ClientId = "admin-cli");
+// Deliberately no per-institution scoped-key equivalent to Mongo/RabbitMq/Keycloak's generated
+// credentials - v1 reuses this same root access key for every institution's Archive resource,
+// accepted as a lower-isolation tradeoff (see Aetheric.Provisioning.S3's own doc comment).
+public sealed record S3RootOptions(string Scheme = "https", bool ForcePathStyle = true, string? Region = null);
 public sealed record RootCredential(string Host, int Port, string? Username, string Password)
 {
     public MongoRootOptions? Mongo { get; init; }
     public PostgresRootOptions? Postgres { get; init; }
     public RabbitMqRootOptions? RabbitMq { get; init; }
     public KeycloakRootOptions? Keycloak { get; init; }
+    public S3RootOptions? S3 { get; init; }
     public override string ToString() => "RootCredential { Password = [redacted] }";
 }
 public interface IRootCredentialStore

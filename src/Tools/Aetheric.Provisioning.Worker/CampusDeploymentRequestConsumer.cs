@@ -4,6 +4,7 @@ using Aetheric.Provisioning.Engine;
 using Aetheric.Provisioning.Keycloak;
 using Aetheric.Provisioning.MongoDb;
 using Aetheric.Provisioning.RabbitMq;
+using Aetheric.Provisioning.S3;
 using AethericForge.Runtime.Abstractions.Interfaces.Post;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Consumers;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
@@ -30,9 +31,14 @@ public sealed class NoParentCapabilityResolver : IParentCapabilityResolver
 /// Workbench's pattern: the host builds each provider's connection, EnsureAsync itself stays
 /// credential-agnostic), and credentials only exist for the lifetime of one request here.
 ///
-/// Only "rabbitmq", "mongodb", and "keycloak" have real providers today - Archive still
-/// correctly reports provider.unsupported. That's expected, not a bug: Stage 6 adds one
-/// provider at a time, following the same pattern (S3 remains).
+/// All four message-driven resources now have real providers ("rabbitmq", "mongodb", "keycloak",
+/// "s3") - Stage 6's per-message credential flow is complete. Workbench is deliberately not
+/// built here even though it also has a real provider (Aetheric.Provisioning.Workbench.Redis):
+/// its backend takes a host-injected IDatabase (RedisWorkbenchBackend(IDatabase database)), not a
+/// per-request credential, so it stays outside BuildProviders - a plan against the *whole* campus
+/// (all five resources, including Workbench) still reports provider.unsupported for Workbench
+/// specifically when driven through this Worker. That's a structural difference from the other
+/// four, not a remaining Stage 6 gap.
 ///
 /// Takes the review pipeline's stateless pieces via constructor injection - not built
 /// per-message - so a test can substitute a fake IDefinitionSource instead of requiring live
@@ -128,6 +134,13 @@ public sealed class CampusDeploymentRequestConsumer(
             providers.Add(new KeycloakResourceProvider(new RootCredential(keycloak.Host, keycloak.Port, keycloak.Username, keycloak.Password)
             {
                 Keycloak = new KeycloakRootOptions(keycloak.Scheme ?? "https", keycloak.BasePath ?? "/", keycloak.Realm ?? "master")
+            }));
+        }
+        if (credentials.TryGetValue("s3", out var s3))
+        {
+            providers.Add(new S3ResourceProvider(new RootCredential(s3.Host, s3.Port, s3.Username, s3.Password)
+            {
+                S3 = new S3RootOptions(s3.Scheme ?? "https")
             }));
         }
         return providers;
