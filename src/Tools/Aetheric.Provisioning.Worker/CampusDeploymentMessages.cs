@@ -25,7 +25,8 @@ public sealed record RootCredentialPayload(
     string? AuthDatabase = null,
     string? Database = null,
     string? Scheme = null,
-    string? BasePath = null);
+    string? BasePath = null,
+    string? Realm = null);
 
 public sealed record CampusDeploymentCompleted(
     Guid RequestId,

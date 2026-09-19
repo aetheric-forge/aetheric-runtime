@@ -16,6 +16,7 @@
     <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Persistence/Aetheric.Provisioning.Persistence.csproj" />
     <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.RabbitMq/Aetheric.Provisioning.RabbitMq.csproj" />
     <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.MongoDb/Aetheric.Provisioning.MongoDb.csproj" />
+    <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Keycloak/Aetheric.Provisioning.Keycloak.csproj" />
     <ProjectReference Include="../../Institutions/AethericForge.Runtime.Institutions.Campus/AethericForge.Runtime.Institutions.Campus.csproj" />
     <ProjectReference Include="../../Providers/AethericForge.Runtime.Providers.Post.RabbitMq/AethericForge.Runtime.Providers.Post.RabbitMq.csproj" />
   </ItemGroup>

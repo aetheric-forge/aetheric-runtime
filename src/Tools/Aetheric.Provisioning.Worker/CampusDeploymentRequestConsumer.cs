@@ -1,6 +1,7 @@
 using Aetheric.Provisioning.Application;
 using Aetheric.Provisioning.Definitions;
 using Aetheric.Provisioning.Engine;
+using Aetheric.Provisioning.Keycloak;
 using Aetheric.Provisioning.MongoDb;
 using Aetheric.Provisioning.RabbitMq;
 using AethericForge.Runtime.Abstractions.Interfaces.Post;
@@ -29,9 +30,9 @@ public sealed class NoParentCapabilityResolver : IParentCapabilityResolver
 /// Workbench's pattern: the host builds each provider's connection, EnsureAsync itself stays
 /// credential-agnostic), and credentials only exist for the lifetime of one request here.
 ///
-/// Only "rabbitmq" and "mongodb" have real providers today - Archive and Registry still
-/// correctly report provider.unsupported. That's expected, not a bug: Stage 6 adds one
-/// provider at a time, following the same pattern (Keycloak, S3 remain).
+/// Only "rabbitmq", "mongodb", and "keycloak" have real providers today - Archive still
+/// correctly reports provider.unsupported. That's expected, not a bug: Stage 6 adds one
+/// provider at a time, following the same pattern (S3 remains).
 ///
 /// Takes the review pipeline's stateless pieces via constructor injection - not built
 /// per-message - so a test can substitute a fake IDefinitionSource instead of requiring live
@@ -120,6 +121,13 @@ public sealed class CampusDeploymentRequestConsumer(
             providers.Add(new MongoDbResourceProvider(new RootCredential(mongo.Host, mongo.Port, mongo.Username, mongo.Password)
             {
                 Mongo = new MongoRootOptions(mongo.AuthDatabase ?? "admin")
+            }));
+        }
+        if (credentials.TryGetValue("keycloak", out var keycloak))
+        {
+            providers.Add(new KeycloakResourceProvider(new RootCredential(keycloak.Host, keycloak.Port, keycloak.Username, keycloak.Password)
+            {
+                Keycloak = new KeycloakRootOptions(keycloak.Scheme ?? "https", keycloak.BasePath ?? "/", keycloak.Realm ?? "master")
             }));
         }
         return providers;

@@ -167,6 +167,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetheric.Provisioning.Rabbi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetheric.Provisioning.MongoDb", "Provisioning\Aetheric.Provisioning.MongoDb\Aetheric.Provisioning.MongoDb.csproj", "{B8E75CD3-42AB-48FC-B7A5-2ECAE9408AA7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetheric.Provisioning.Keycloak", "Provisioning\Aetheric.Provisioning.Keycloak\Aetheric.Provisioning.Keycloak.csproj", "{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -817,6 +819,18 @@ Global
 		{B8E75CD3-42AB-48FC-B7A5-2ECAE9408AA7}.Release|x64.Build.0 = Release|Any CPU
 		{B8E75CD3-42AB-48FC-B7A5-2ECAE9408AA7}.Release|x86.ActiveCfg = Release|Any CPU
 		{B8E75CD3-42AB-48FC-B7A5-2ECAE9408AA7}.Release|x86.Build.0 = Release|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Debug|x64.Build.0 = Debug|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Debug|x86.Build.0 = Debug|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Release|x64.ActiveCfg = Release|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Release|x64.Build.0 = Release|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Release|x86.ActiveCfg = Release|Any CPU
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -884,5 +898,6 @@ Global
 		{88D0C13F-8BDE-430E-B17A-2E1C57627960} = {AD4CDE37-D154-4F43-8EF2-999176F24C08}
 		{8665567A-C124-4728-898A-BBE39FB19272} = {1F096E01-38E5-0D93-8393-C3F1D835DC64}
 		{B8E75CD3-42AB-48FC-B7A5-2ECAE9408AA7} = {1F096E01-38E5-0D93-8393-C3F1D835DC64}
+		{8CDDF462-D0DD-4F03-85C9-DF59D86D121F} = {1F096E01-38E5-0D93-8393-C3F1D835DC64}
 	EndGlobalSection
 EndGlobal
