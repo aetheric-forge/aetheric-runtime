@@ -87,11 +87,20 @@ public interface ISecretStore
 public sealed record MongoRootOptions(string AuthDatabase = "admin", bool DirectConnection = false);
 public sealed record PostgresRootOptions(string Database = "postgres");
 public sealed record RabbitMqRootOptions(string Scheme = "http", string BasePath = "/");
+// Realm is the token realm the root credential authenticates against (typically "master" - the
+// realm whose admin user has authority to create other realms), not the realm being provisioned;
+// that's the resource binding's own "realm" setting, matching Mongo's AuthDatabase/Database split.
+// ClientId is Keycloak's built-in public "admin-cli" client, used for a resource-owner password
+// grant with the root Username/Password - matching how kcadm.sh itself bootstraps, and how the
+// other root credentials (Postgres/Mongo/RabbitMQ) are all an actual admin superuser, not a
+// pre-provisioned service-account client the operator would otherwise have to set up by hand.
+public sealed record KeycloakRootOptions(string Scheme = "https", string BasePath = "/", string Realm = "master", string ClientId = "admin-cli");
 public sealed record RootCredential(string Host, int Port, string? Username, string Password)
 {
     public MongoRootOptions? Mongo { get; init; }
     public PostgresRootOptions? Postgres { get; init; }
     public RabbitMqRootOptions? RabbitMq { get; init; }
+    public KeycloakRootOptions? Keycloak { get; init; }
     public override string ToString() => "RootCredential { Password = [redacted] }";
 }
 public interface IRootCredentialStore

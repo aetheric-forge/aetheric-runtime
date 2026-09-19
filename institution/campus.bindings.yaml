@@ -2,15 +2,15 @@
 # supplies its own bindings document; this one exists to show the expected shape and to let the
 # definition be exercised locally.
 #
-# "workbench", "post-office", and "library" have real Aetheric.Provisioning IResourceProviders
-# today (Redis-backed Aetheric.Provisioning.Workbench.Redis; RabbitMQ-management-API-backed
-# Aetheric.Provisioning.RabbitMq; MongoDB-backed Aetheric.Provisioning.MongoDb). archive/registry
-# name providers ("s3"/"keycloak") that don't exist yet - building them is separately roadmapped
-# ("Demand-driven expansion" in docs/roadmap.md). Until they land, ProvisioningPlanner.Plan()
-# against this document will report provider.unsupported for those two resources - that's
-# expected, not a defect in this binding. The planner has no partial/best-effort mode, so a plan
-# against the whole campus fails wholesale rather than skipping just those steps; planning any
-# subset of workbench/post-office/library alone works today.
+# "workbench", "post-office", "library", and "registry" have real Aetheric.Provisioning
+# IResourceProviders today (Redis-backed Aetheric.Provisioning.Workbench.Redis; RabbitMQ-
+# management-API-backed Aetheric.Provisioning.RabbitMq; MongoDB-backed Aetheric.Provisioning.MongoDb;
+# Keycloak-admin-API-backed Aetheric.Provisioning.Keycloak). archive names a provider ("s3") that
+# doesn't exist yet - building it is separately roadmapped ("Demand-driven expansion" in
+# docs/roadmap.md). Until it lands, ProvisioningPlanner.Plan() against this document will report
+# provider.unsupported for that resource - that's expected, not a defect in this binding. The
+# planner has no partial/best-effort mode, so a plan against the whole campus fails wholesale
+# rather than skipping just that step; planning any subset of the other four alone works today.
 #
 # "workbench"'s target must match whatever target string the host's WorkbenchProvider is
 # constructed with (WorkbenchProvider(string target, ...) - a fixed identity supplied by the host,
@@ -34,7 +34,8 @@
       "vhost": "campus"
     },
     "registry": {
-      "provider": "keycloak"
+      "provider": "keycloak",
+      "realm": "campus"
     },
     "workbench": {
       "provider": "workbench",

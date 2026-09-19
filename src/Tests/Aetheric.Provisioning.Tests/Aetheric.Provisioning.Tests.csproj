@@ -27,4 +27,5 @@
   <ItemGroup><ProjectReference Include="../../Tools/Aetheric.Provisioning.Worker/Aetheric.Provisioning.Worker.csproj" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../../Provisioning/Aetheric.Provisioning.RabbitMq/Aetheric.Provisioning.RabbitMq.csproj" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../../Provisioning/Aetheric.Provisioning.MongoDb/Aetheric.Provisioning.MongoDb.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Keycloak/Aetheric.Provisioning.Keycloak.csproj" /></ItemGroup>
 </Project>
