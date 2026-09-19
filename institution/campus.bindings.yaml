@@ -2,14 +2,15 @@
 # supplies its own bindings document; this one exists to show the expected shape and to let the
 # definition be exercised locally.
 #
-# Only "workbench" has a real Aetheric.Provisioning IResourceProvider today (Redis-backed,
-# Aetheric.Provisioning.Workbench.Redis). archive/library/post-office/registry name providers
-# ("s3"/"mongodb"/"rabbitmq"/"keycloak") that don't exist yet in aetheric-provisioning - building
-# them is separately roadmapped ("Demand-driven expansion" in docs/roadmap.md). Until they land,
-# ProvisioningPlanner.Plan() against this document will report provider.unsupported for those four
-# resources - that's expected, not a defect in this binding. The planner has no partial/best-effort
-# mode, so a plan against the whole campus fails wholesale rather than skipping just those steps;
-# planning workbench alone (a bindings document with only that one resource) works today.
+# Only "workbench" and "post-office" have real Aetheric.Provisioning IResourceProviders today
+# (Redis-backed Aetheric.Provisioning.Workbench.Redis, and RabbitMQ-management-API-backed
+# Aetheric.Provisioning.RabbitMq). archive/library/registry name providers ("s3"/"mongodb"/
+# "keycloak") that don't exist yet - building them is separately roadmapped ("Demand-driven
+# expansion" in docs/roadmap.md). Until they land, ProvisioningPlanner.Plan() against this
+# document will report provider.unsupported for those three resources - that's expected, not a
+# defect in this binding. The planner has no partial/best-effort mode, so a plan against the whole
+# campus fails wholesale rather than skipping just those steps; planning workbench and post-office
+# alone (a bindings document with only those two resources) works today.
 #
 # "workbench"'s target must match whatever target string the host's WorkbenchProvider is
 # constructed with (WorkbenchProvider(string target, ...) - a fixed identity supplied by the host,
@@ -28,7 +29,8 @@
       "provider": "mongodb"
     },
     "post-office": {
-      "provider": "rabbitmq"
+      "provider": "rabbitmq",
+      "vhost": "campus"
     },
     "registry": {
       "provider": "keycloak"
