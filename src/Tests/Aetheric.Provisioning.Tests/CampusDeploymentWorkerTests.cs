@@ -125,12 +125,92 @@ public sealed class CampusDeploymentWorkerTests
         }
     }
 
+    /// <summary>
+    /// Proves the four message-driven Stage 6 providers work together through one real
+    /// plan/execute run, not just individually - archive/library/post-office/registry, the whole
+    /// campus minus Workbench (which this Worker deliberately never builds a provider for; see
+    /// CampusDeploymentRequestConsumer's doc comment).
+    /// </summary>
+    [AllStage6ProvidersFact]
+    public async Task Worker_consumer_provisions_all_four_message_driven_resources_together()
+    {
+        var connection = Environment.GetEnvironmentVariable("PROVISIONING_TEST_RABBITMQ")!;
+        await using var postProvider = new RabbitMqPostProvider(ProvisioningPost.Domain, connection);
+
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        var vhost = "test-" + suffix;
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "aetheric-provisioning-worker-test-" + Guid.NewGuid().ToString("N"));
+        var consumer = BuildConsumer(postProvider, new FourResourceSource(suffix), tempDirectory);
+
+        var resultReceived = new TaskCompletionSource<CampusDeploymentCompleted>(TaskCreationOptions.RunContinuationsAsynchronously);
+        await postProvider.SubscribeAsync(ProvisioningPost.ResultReference(), new ResultConsumer(resultReceived));
+        await postProvider.SubscribeAsync(ProvisioningPost.RequestReference(), consumer);
+
+        var management = ManagementCredential();
+        using var managementClient = new HttpClient { BaseAddress = new Uri($"http://{management.Host}:{management.Port}/") };
+        managementClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+            Convert.ToBase64String(Encoding.UTF8.GetBytes($"{management.Username}:{management.Password}")));
+
+        try
+        {
+            var request = new CampusDeploymentRequested(
+                Guid.NewGuid(),
+                "https://example.test/fixture",
+                "0000000000000000000000000000000000000000",
+                "institution/campus.yaml",
+                "institution/campus.bindings.yaml",
+                new Dictionary<string, RootCredentialPayload>
+                {
+                    ["rabbitmq"] = management,
+                    ["mongo"] = MongoCredential(),
+                    ["keycloak"] = KeycloakCredential(),
+                    ["s3"] = S3Credential(),
+                },
+                DateTimeOffset.UtcNow);
+            var envelope = new PostEnvelope<CampusDeploymentRequested>(
+                ProvisioningPost.RequestReference(), request, new PostMetadata());
+            await postProvider.PublishAsync(envelope);
+
+            var completed = await resultReceived.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.Equal(request.RequestId, completed.RequestId);
+            Assert.True(completed.Succeeded, string.Join("; ", completed.Issues));
+            Assert.Empty(completed.Issues);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+            await managementClient.DeleteAsync($"api/vhosts/{Uri.EscapeDataString(vhost)}");
+            await managementClient.DeleteAsync("api/users/campus-post-office");
+        }
+    }
+
     private static RootCredentialPayload ManagementCredential()
     {
         var amqp = new Uri(Environment.GetEnvironmentVariable("PROVISIONING_TEST_RABBITMQ")!);
         var userInfo = amqp.UserInfo.Split(':', 2);
         // RabbitMQ's management plugin listens on a fixed port independent of the AMQP port.
         return new RootCredentialPayload(amqp.Host, 15672, Uri.UnescapeDataString(userInfo[0]), Uri.UnescapeDataString(userInfo[1]));
+    }
+
+    private static RootCredentialPayload MongoCredential()
+    {
+        var uri = new MongoDB.Driver.MongoUrl(Environment.GetEnvironmentVariable("PROVISIONING_TEST_MONGO")!);
+        return new RootCredentialPayload(uri.Server!.Host, uri.Server.Port, uri.Username, uri.Password, AuthDatabase: uri.AuthenticationSource ?? "admin");
+    }
+
+    private static RootCredentialPayload KeycloakCredential()
+    {
+        var uri = new Uri(Environment.GetEnvironmentVariable("PROVISIONING_TEST_KEYCLOAK")!);
+        var userInfo = uri.UserInfo.Split(':', 2);
+        return new RootCredentialPayload(uri.Host, uri.Port, Uri.UnescapeDataString(userInfo[0]), Uri.UnescapeDataString(userInfo[1]), Scheme: uri.Scheme);
+    }
+
+    private static RootCredentialPayload S3Credential()
+    {
+        var uri = new Uri(Environment.GetEnvironmentVariable("PROVISIONING_TEST_S3")!);
+        var userInfo = uri.UserInfo.Split(':', 2);
+        return new RootCredentialPayload(uri.Host, uri.Port, Uri.UnescapeDataString(userInfo[0]), Uri.UnescapeDataString(userInfo[1]), Scheme: uri.Scheme);
     }
 
     private static SourceDocument Document(string text, string path)
@@ -180,6 +260,46 @@ public sealed class CampusDeploymentWorkerTests
         }
     }
 
+    /// <summary>A hand-built institution with the four resources this Worker builds real providers for (no Workbench).</summary>
+    private sealed class FourResourceSource(string suffix) : IDefinitionSource
+    {
+        public Task<SourceLoadResult> LoadAsync(DefinitionSourceRequest request, CancellationToken ct = default)
+        {
+            var definition = Document(JsonSerializer.Serialize(new
+            {
+                descriptor = new { id = "campus", name = "Campus", version = "1.0.0", description = "Test fixture campus with the four message-driven resources." },
+                domains = Array.Empty<object>(),
+                capabilities = Array.Empty<object>(),
+                organizations = Array.Empty<object>(),
+                roles = Array.Empty<object>(),
+                resources = new[]
+                {
+                    new { id = "archive", name = "Archive", description = "Test archive resource.", type = "archive", ownership = "owned" },
+                    new { id = "library", name = "Library", description = "Test library resource.", type = "knowledge", ownership = "owned" },
+                    new { id = "post-office", name = "Post Office", description = "Test post office resource.", type = "post", ownership = "owned" },
+                    new { id = "registry", name = "Registry", description = "Test registry resource.", type = "identity", ownership = "owned" },
+                },
+                workflows = Array.Empty<object>(),
+                policies = Array.Empty<object>(),
+                initialState = new { configuration = new { } }
+            }), "institution/campus.yaml");
+            var bindings = Document(JsonSerializer.Serialize(new
+            {
+                institution = "campus",
+                version = "1.0.0",
+                deployment = new { name = "test" },
+                bindings = new Dictionary<string, object>
+                {
+                    ["archive"] = new { provider = "s3", bucket = "test-" + suffix },
+                    ["library"] = new { provider = "mongodb", database = "test-" + suffix },
+                    ["post-office"] = new { provider = "rabbitmq", vhost = "test-" + suffix },
+                    ["registry"] = new { provider = "keycloak", realm = "test-" + suffix },
+                }
+            }), "institution/campus.bindings.yaml");
+            return Task.FromResult(new SourceLoadResult(new SourceBundle(definition, bindings), []));
+        }
+    }
+
     private sealed class ResultConsumer(TaskCompletionSource<CampusDeploymentCompleted> completion)
         : MessageConsumerBase<CampusDeploymentCompleted>
     {
@@ -199,5 +319,15 @@ public sealed class RabbitMqFactAttribute : FactAttribute
     {
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PROVISIONING_TEST_RABBITMQ")))
             Skip = "Set PROVISIONING_TEST_RABBITMQ to an amqp:// connection string for an isolated broker.";
+    }
+}
+
+public sealed class AllStage6ProvidersFactAttribute : FactAttribute
+{
+    public AllStage6ProvidersFactAttribute()
+    {
+        var missing = new[] { "PROVISIONING_TEST_RABBITMQ", "PROVISIONING_TEST_MONGO", "PROVISIONING_TEST_KEYCLOAK", "PROVISIONING_TEST_S3" }
+            .Where(name => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(name))).ToArray();
+        if (missing.Length > 0) Skip = "Set " + string.Join(", ", missing) + " for an isolated broker/server of each kind.";
     }
 }
