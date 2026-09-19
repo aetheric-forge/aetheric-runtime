@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Aetheric.Provisioning.Engine/Aetheric.Provisioning.Engine.csproj" />
+    <ProjectReference Include="../Aetheric.Provisioning.Definitions/Aetheric.Provisioning.Definitions.csproj" />
+    <EmbeddedResource Include="../fixtures/decisions/*.yaml" />
+  </ItemGroup>
+</Project>
