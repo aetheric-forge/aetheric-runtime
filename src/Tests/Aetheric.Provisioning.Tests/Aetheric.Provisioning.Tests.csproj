@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Registry/Aetheric.Provisioning.Registry.csproj" />
+    <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Workbench.Redis/Aetheric.Provisioning.Workbench.Redis.csproj" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4"><PrivateAssets>all</PrivateAssets></PackageReference>
+    <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Simulation/Aetheric.Provisioning.Simulation.csproj" />
+    <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Application/Aetheric.Provisioning.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup><ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Persistence/Aetheric.Provisioning.Persistence.csproj" /></ItemGroup>
+  <!--
+    Infrastructure wasn't referenced directly here before - it came in transitively through
+    samples/Aetheric.Provisioning.Web.csproj (which also referenced it directly). That sample
+    moved to aetheric-web-components along with Components; this repo's tests still need
+    Infrastructure directly for InfrastructureIntegrationTests.
+  -->
+  <ItemGroup><ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Infrastructure/Aetheric.Provisioning.Infrastructure.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../Tools/Aetheric.Provisioning.Harness/Aetheric.Provisioning.Harness.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../Tools/Aetheric.Provisioning.Worker/Aetheric.Provisioning.Worker.csproj" /></ItemGroup>
+</Project>
