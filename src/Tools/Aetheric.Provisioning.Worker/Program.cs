@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Aetheric.Provisioning.Application;
 using Aetheric.Provisioning.Definitions;
 using Aetheric.Provisioning.Engine;
@@ -16,22 +17,27 @@ builder.Services.AddSingleton<IPostProvider>(postProvider);
 
 var definitionSource = new PublicGitHubSource(PublicGitHubSource.CreateHttpClient());
 var reader = new InstitutionYamlReader();
-// No real IResourceProvider is wired here yet - Stage 6 territory. An empty provider list
-// means every owned resource fails planning with provider.unsupported, which is the correct,
-// expected result until real providers exist.
-var providers = Array.Empty<IResourceProvider>();
-var planner = new ProvisioningPlanner(providers);
 var dataDirectory = builder.Configuration["Provisioning:DataDirectory"] ?? Path.Combine(AppContext.BaseDirectory, "data");
-var secretKey = new byte[32]; // Ephemeral: no plan reaches execution today, so no secret is ever written.
-var engine = new ProvisioningEngine(
-    providers,
-    new NoParentCapabilityResolver(),
-    new FileRunStateStore(Path.Combine(dataDirectory, "run-state")),
-    new EncryptedFileSecretStore(Path.Combine(dataDirectory, "secrets"), secretKey));
+var secretsDirectory = Path.Combine(dataDirectory, "secrets");
+// TODO(Stage 6): generate and persist this key properly (matching ManagedRootCredentialStore's
+// own key-file convention) once a resource provider actually generates a secret worth keeping
+// across restarts. Ephemeral for now: a fresh random key every start, with any secret files left
+// over from a previous run's (different) key wiped first - EncryptedFileSecretStore only expects
+// FileNotFoundException from a missing secret, not a decrypt failure from a stale key, so leaving
+// old ciphertext in place would crash EnsureAsync instead of cleanly rotating it.
+if (Directory.Exists(secretsDirectory)) Directory.Delete(secretsDirectory, recursive: true);
+var secretKey = new byte[32];
+RandomNumberGenerator.Fill(secretKey);
 
 builder.Services.AddPostSubscription(
     ProvisioningPost.RequestReference(),
-    new CampusDeploymentRequestConsumer(postProvider, definitionSource, reader, planner, engine));
+    new CampusDeploymentRequestConsumer(
+        postProvider,
+        definitionSource,
+        reader,
+        new NoParentCapabilityResolver(),
+        new FileRunStateStore(Path.Combine(dataDirectory, "run-state")),
+        new EncryptedFileSecretStore(secretsDirectory, secretKey)));
 
 var host = builder.Build();
 await host.RunAsync();

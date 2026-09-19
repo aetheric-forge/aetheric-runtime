@@ -25,4 +25,5 @@
   <ItemGroup><ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Infrastructure/Aetheric.Provisioning.Infrastructure.csproj" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../../Tools/Aetheric.Provisioning.Harness/Aetheric.Provisioning.Harness.csproj" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../../Tools/Aetheric.Provisioning.Worker/Aetheric.Provisioning.Worker.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../Provisioning/Aetheric.Provisioning.RabbitMq/Aetheric.Provisioning.RabbitMq.csproj" /></ItemGroup>
 </Project>
