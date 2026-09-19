@@ -1,6 +1,7 @@
 using Aetheric.Provisioning.Application;
 using Aetheric.Provisioning.Definitions;
 using Aetheric.Provisioning.Engine;
+using Aetheric.Provisioning.MongoDb;
 using Aetheric.Provisioning.RabbitMq;
 using AethericForge.Runtime.Abstractions.Interfaces.Post;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Consumers;
@@ -28,10 +29,9 @@ public sealed class NoParentCapabilityResolver : IParentCapabilityResolver
 /// Workbench's pattern: the host builds each provider's connection, EnsureAsync itself stays
 /// credential-agnostic), and credentials only exist for the lifetime of one request here.
 ///
-/// Only "rabbitmq" has a real provider today - every other resource in institution/campus.yaml
-/// still correctly reports provider.unsupported. That's expected, not a bug: this proves the
-/// message pipe and the credential-to-provider wiring end-to-end for one resource, the pattern
-/// the rest (MongoDB, Keycloak, S3) will follow.
+/// Only "rabbitmq" and "mongodb" have real providers today - Archive and Registry still
+/// correctly report provider.unsupported. That's expected, not a bug: Stage 6 adds one
+/// provider at a time, following the same pattern (Keycloak, S3 remain).
 ///
 /// Takes the review pipeline's stateless pieces via constructor injection - not built
 /// per-message - so a test can substitute a fake IDefinitionSource instead of requiring live
@@ -113,6 +113,13 @@ public sealed class CampusDeploymentRequestConsumer(
             providers.Add(new RabbitMqResourceProvider(new RootCredential(rabbitMq.Host, rabbitMq.Port, rabbitMq.Username, rabbitMq.Password)
             {
                 RabbitMq = new RabbitMqRootOptions(rabbitMq.Scheme ?? "http", rabbitMq.BasePath ?? "/")
+            }));
+        }
+        if (credentials.TryGetValue("mongo", out var mongo))
+        {
+            providers.Add(new MongoDbResourceProvider(new RootCredential(mongo.Host, mongo.Port, mongo.Username, mongo.Password)
+            {
+                Mongo = new MongoRootOptions(mongo.AuthDatabase ?? "admin")
             }));
         }
         return providers;
