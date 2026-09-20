@@ -43,7 +43,14 @@ public sealed class RabbitMqPostProvider : IPostProvider, IAsyncDisposable
             if (_channel != null) return _channel;
 
             _connection ??= await _connectionFactory.CreateConnectionAsync(cancellationToken: ct);
-            _channel = await _connection.CreateChannelAsync(cancellationToken: ct);
+            // Publisher confirmations, with tracking, make BasicPublishAsync's own await
+            // genuinely wait for the broker's ack - and, combined with mandatory: true below,
+            // throw PublishException on a nack or basic.return - instead of a publish that always
+            // "succeeds" whether or not the broker ever actually received or routed it. Tracking
+            // is what lets the library correlate a return/nack back to the right in-flight
+            // publish without any manual BasicReturnAsync/BasicNacksAsync wiring.
+            _channel = await _connection.CreateChannelAsync(
+                new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true), ct);
 
             await _channel.ExchangeDeclareAsync(
                 exchange: _exchangeName,
@@ -75,6 +82,10 @@ public sealed class RabbitMqPostProvider : IPostProvider, IAsyncDisposable
             MessageId = envelope.Metadata.MessageId,
             CorrelationId = envelope.Metadata.CorrelationId,
             Timestamp = new AmqpTimestamp(envelope.Metadata.ProducedAtUtc.ToUnixTimeSeconds()),
+            // The exchange/queues are already declared durable: true - persistent delivery mode
+            // is the other half of that; a durable queue holding transient (the default) messages
+            // still loses them across a broker restart.
+            DeliveryMode = DeliveryModes.Persistent,
             Headers = new Dictionary<string, object?>()
         };
 
@@ -88,10 +99,13 @@ public sealed class RabbitMqPostProvider : IPostProvider, IAsyncDisposable
             properties.Headers[attr.Key] = attr.Value;
         }
 
+        // mandatory: true - combined with confirmations+tracking on the channel above - means an
+        // unroutable message (nothing bound to this routing key yet) throws PublishException
+        // rather than being silently dropped by the broker.
         await channel.BasicPublishAsync(
             exchange: _exchangeName,
             routingKey: routingKey,
-            mandatory: false,
+            mandatory: true,
             basicProperties: properties,
             body: body,
             cancellationToken: ct);
