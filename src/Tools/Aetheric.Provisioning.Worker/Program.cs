@@ -29,14 +29,16 @@ if (Directory.Exists(secretsDirectory)) Directory.Delete(secretsDirectory, recur
 var secretKey = new byte[32];
 RandomNumberGenerator.Fill(secretKey);
 
+var runStateStore = new FileRunStateStore(Path.Combine(dataDirectory, "run-state"));
+var secretStore = new EncryptedFileSecretStore(secretsDirectory, secretKey);
+
 builder.Services.AddPostSubscription(
     ProvisioningPost.RequestReference(),
-    new InstitutionDeploymentRequestConsumer(
-        postProvider,
-        definitionSource,
-        reader,
-        new FileRunStateStore(Path.Combine(dataDirectory, "run-state")),
-        new EncryptedFileSecretStore(secretsDirectory, secretKey)));
+    new InstitutionDeploymentRequestConsumer(postProvider, definitionSource, reader, runStateStore, secretStore));
+
+builder.Services.AddPostSubscription(
+    ProvisioningBootstrapPost.RequestReference(),
+    new InstitutionBootstrapRequestConsumer(postProvider, reader, runStateStore, secretStore));
 
 var host = builder.Build();
 await host.RunAsync();

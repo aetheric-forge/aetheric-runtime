@@ -27,6 +27,9 @@ public sealed class NoParentCapabilityResolver : IParentCapabilityResolver
         Task.FromResult(false);
 }
 
+/// <summary>The outcome of running one institution through DeployOneAsync.</summary>
+public readonly record struct DeploymentOutcome(bool Succeeded, string[] Issues);
+
 /// <summary>
 /// Runs the plan/execute pipeline for a requested institution deployment and reports the outcome
 /// back. Providers are built fresh per message from that message's own RootCredentials, not
@@ -49,6 +52,12 @@ public sealed class NoParentCapabilityResolver : IParentCapabilityResolver
 /// Takes the review pipeline's stateless pieces via constructor injection - not built
 /// per-message - so a test can substitute a fake IDefinitionSource instead of requiring live
 /// GitHub access to exercise this consumer's logic.
+///
+/// DeployOneAsync/BuildProviders/BuildResolver are also reused by
+/// InstitutionBootstrapRequestConsumer, which deploys four institutions inline (no
+/// IDefinitionSource involved) through the identical configure/review/approve/execute sequence -
+/// factored out here rather than duplicated so a fix to one (like the ParentContext.Capabilities
+/// bug PR #29 found) can't silently apply to only one of the two consumers.
 /// </summary>
 public sealed class InstitutionDeploymentRequestConsumer(
     IPostProvider postProvider,
@@ -63,7 +72,7 @@ public sealed class InstitutionDeploymentRequestConsumer(
     public override async Task ConsumeAsync(InstitutionDeploymentRequested message, IPostContext context, CancellationToken ct = default)
     {
         var providers = BuildProviders(message.RootCredentials);
-        var resolver = BuildResolver(message);
+        var resolver = BuildResolver(message.Parent, message.RootCredentials);
         try
         {
             var planner = new ProvisioningPlanner(providers);
@@ -74,56 +83,9 @@ public sealed class InstitutionDeploymentRequestConsumer(
                 new DefinitionSourceRequest(message.Repository, message.Revision, message.DefinitionPath, message.BindingsPath),
                 ct);
 
-            // ProvisioningPlanner.Plan requires a non-empty parent identity even for a root
-            // institution with no actual parent-contract dependencies (ParentContext defaults to
-            // ("", ""), which always fails context.missing) - LoadAsync alone never calls
-            // Configure, so this is required for ANY plan to become valid, not just this one.
-            // message.Parent carries the deploying institution's *real* parent identity when it
-            // has one (e.g. Campus's University); for a root institution (message.Parent is
-            // null), the pinned definition source doubles as a synthetic identity instead - "this
-            // deployment's context is the commit it was loaded from," true regardless of what
-            // institution it is, and never actually consulted since a root plan has no
-            // CheckParent step to consult it.
-            //
-            // Capabilities is the deploying operator's own declared catalog - "I assert these
-            // contracts resolve at these sources" - and ProvisioningReview.Review() requires it
-            // to already match Bindings.ParentSources before a plan can even be produced (see
-            // ReviewTests.cs's own established pattern: `Capabilities = bindings.ParentSources`).
-            // This is not the live trust boundary - IParentCapabilityResolver.IsAvailableAsync,
-            // called during ExecuteApprovedAsync, is what actually verifies the assertion against
-            // live infrastructure. Skipping this leaves Review() rejecting every parent-dependent
-            // plan with "parent.unresolved" before the resolver is ever reached at all.
-            if (review.Loaded is not null)
-            {
-                var parentContext = message.Parent is { } parent
-                    ? new ParentContext(parent.Repository, parent.Revision)
-                    : new ParentContext(message.Repository, message.Revision);
-                parentContext = parentContext with { Capabilities = review.Bindings!.ParentSources };
-                review.Configure(review.Bindings!, parentContext);
-            }
+            var outcome = await DeployOneAsync(review, message.Parent, ct);
 
-            var result = review.Review();
-            bool succeeded;
-            string[] issues;
-            if (!result.IsValid)
-            {
-                succeeded = false;
-                issues = review.Issues.Select(issue => $"{issue.Code}: {issue.Target} - {issue.Message}").ToArray();
-            }
-            else
-            {
-                // Review() only plans - EnsureAsync is never called until the plan is approved
-                // and executed. Auto-approve: this message *is* the operator's approval, there's
-                // no separate review step for a machine-to-machine deployment request.
-                review.Approve(result.Plan!.Id);
-                var execution = await review.ExecuteApprovedAsync(ct: ct);
-                succeeded = execution.Run?.Succeeded ?? false;
-                issues = execution.Run is { } run
-                    ? run.Outcomes.Where(o => !o.IsSuccessful).Select(o => $"{o.StepId}: {o.Status} ({o.Code})").ToArray()
-                    : execution.Issues.Select(issue => $"{issue.Code}: {issue.Target} - {issue.Message}").ToArray();
-            }
-
-            var completed = new InstitutionDeploymentCompleted(message.RequestId, succeeded, issues, DateTimeOffset.UtcNow);
+            var completed = new InstitutionDeploymentCompleted(message.RequestId, outcome.Succeeded, outcome.Issues, DateTimeOffset.UtcNow);
             var envelope = new PostEnvelope<InstitutionDeploymentCompleted>(
                 ProvisioningPost.ResultReference(),
                 completed,
@@ -138,7 +100,60 @@ public sealed class InstitutionDeploymentRequestConsumer(
         }
     }
 
-    private static IReadOnlyList<IResourceProvider> BuildProviders(IReadOnlyDictionary<string, RootCredentialPayload> credentials)
+    /// <summary>
+    /// The shared configure -> review -> approve -> execute sequence every institution deployment
+    /// runs, regardless of whether it was loaded via IDefinitionSource (this consumer) or
+    /// LoadBundle (InstitutionBootstrapRequestConsumer) - the caller is responsible for loading
+    /// review beforehand; this only runs once review.Loaded reflects whatever was loaded.
+    /// </summary>
+    internal static async Task<DeploymentOutcome> DeployOneAsync(ProvisioningReview review, ParentIdentity? parent, CancellationToken ct)
+    {
+        // ProvisioningPlanner.Plan requires a non-empty parent identity even for a root
+        // institution with no actual parent-contract dependencies (ParentContext defaults to
+        // ("", ""), which always fails context.missing) - LoadAsync/LoadBundle alone never call
+        // Configure, so this is required for ANY plan to become valid, not just this one.
+        // parent carries the deploying institution's *real* parent identity when it has one (e.g.
+        // Campus's University); for a root institution (parent is null), the just-loaded
+        // definition's own provenance doubles as a synthetic identity instead - "this
+        // deployment's context is the commit it was loaded from," true regardless of what
+        // institution it is, and never actually consulted since a root plan has no CheckParent
+        // step to consult it.
+        //
+        // Capabilities is the deploying operator's own declared catalog - "I assert these
+        // contracts resolve at these sources" - and ProvisioningReview.Review() requires it
+        // to already match Bindings.ParentSources before a plan can even be produced (see
+        // ReviewTests.cs's own established pattern: `Capabilities = bindings.ParentSources`).
+        // This is not the live trust boundary - IParentCapabilityResolver.IsAvailableAsync,
+        // called during ExecuteApprovedAsync, is what actually verifies the assertion against
+        // live infrastructure. Skipping this leaves Review() rejecting every parent-dependent
+        // plan with "parent.unresolved" before the resolver is ever reached at all.
+        if (review.Loaded is not null)
+        {
+            var self = review.Loaded.Source.Definition.Provenance;
+            var parentContext = parent is { } p
+                ? new ParentContext(p.Repository, p.Revision)
+                : new ParentContext(self.Repository, self.Commit);
+            parentContext = parentContext with { Capabilities = review.Bindings!.ParentSources };
+            review.Configure(review.Bindings!, parentContext);
+        }
+
+        var result = review.Review();
+        if (!result.IsValid)
+            return new DeploymentOutcome(false, review.Issues.Select(issue => $"{issue.Code}: {issue.Target} - {issue.Message}").ToArray());
+
+        // Review() only plans - EnsureAsync is never called until the plan is approved and
+        // executed. Auto-approve: this message *is* the operator's approval, there's no separate
+        // review step for a machine-to-machine deployment request.
+        review.Approve(result.Plan!.Id);
+        var execution = await review.ExecuteApprovedAsync(ct: ct);
+        var succeeded = execution.Run?.Succeeded ?? false;
+        var issues = execution.Run is { } run
+            ? run.Outcomes.Where(o => !o.IsSuccessful).Select(o => $"{o.StepId}: {o.Status} ({o.Code})").ToArray()
+            : execution.Issues.Select(issue => $"{issue.Code}: {issue.Target} - {issue.Message}").ToArray();
+        return new DeploymentOutcome(succeeded, issues);
+    }
+
+    internal static IReadOnlyList<IResourceProvider> BuildProviders(IReadOnlyDictionary<string, RootCredentialPayload> credentials)
     {
         var providers = new List<IResourceProvider>();
         if (credentials.TryGetValue("rabbitmq", out var rabbitMq))
@@ -172,19 +187,18 @@ public sealed class InstitutionDeploymentRequestConsumer(
         return providers;
     }
 
-    // message.Parent is only non-null for a non-root institution (e.g. Campus) - and the only
-    // real parent contract that exists today is Campus's IRegistrar dependency on University's
-    // Keycloak-backed Registry, so this only ever needs to build one kind of resolver. A message
-    // that claims a parent but is missing the "keycloak" credential falls back to
-    // NoParentCapabilityResolver rather than crashing - "cannot verify" correctly reports as
-    // "unavailable", not silent success.
-    private static IParentCapabilityResolver BuildResolver(InstitutionDeploymentRequested message)
+    // parent is only non-null for a non-root institution (e.g. Campus) - and the only real
+    // parent contract that exists today is IRegistrar, so this only ever needs to build one kind
+    // of resolver. Missing the "keycloak" credential falls back to NoParentCapabilityResolver
+    // rather than crashing - "cannot verify" correctly reports as "unavailable", not silent
+    // success.
+    internal static IParentCapabilityResolver BuildResolver(ParentIdentity? parent, IReadOnlyDictionary<string, RootCredentialPayload> credentials)
     {
-        if (message.Parent is not { } parent) return new NoParentCapabilityResolver();
-        if (!message.RootCredentials.TryGetValue("keycloak", out var keycloak)) return new NoParentCapabilityResolver();
+        if (parent is not { } p) return new NoParentCapabilityResolver();
+        if (!credentials.TryGetValue("keycloak", out var keycloak)) return new NoParentCapabilityResolver();
         return new KeycloakRealmParentCapabilityResolver(new RootCredential(keycloak.Host, keycloak.Port, keycloak.Username, keycloak.Password)
         {
             Keycloak = new KeycloakRootOptions(keycloak.Scheme ?? "https", keycloak.BasePath ?? "/", keycloak.Realm ?? "master")
-        }, parent.RegistryRealm);
+        }, p.RegistryRealm);
     }
 }
