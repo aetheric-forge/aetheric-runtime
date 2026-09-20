@@ -67,6 +67,30 @@ public interface IParentCapabilityResolver
     Task<bool> IsAvailableAsync(ParentContext parent, string contract, string source,
         CancellationToken cancellationToken);
 }
+
+// Every real IParentCapabilityResolver (KeycloakRealmParentCapabilityResolver,
+// RabbitMqVhostParentCapabilityResolver, S3BucketParentCapabilityResolver,
+// MongoDbLibraryParentCapabilityResolver) recognizes exactly one contract and returns false for
+// any other, so composing several is a plain OR: only the one whose contract actually matches
+// ever performs real I/O. Disposes whichever inner resolvers are themselves disposable.
+public sealed class CompositeParentCapabilityResolver(IEnumerable<IParentCapabilityResolver> resolvers)
+    : IParentCapabilityResolver, IDisposable
+{
+    private readonly ImmutableArray<IParentCapabilityResolver> _resolvers = resolvers.ToImmutableArray();
+
+    public async Task<bool> IsAvailableAsync(ParentContext parent, string contract, string source, CancellationToken cancellationToken)
+    {
+        foreach (var resolver in _resolvers)
+            if (await resolver.IsAvailableAsync(parent, contract, source, cancellationToken))
+                return true;
+        return false;
+    }
+
+    public void Dispose()
+    {
+        foreach (var resolver in _resolvers) (resolver as IDisposable)?.Dispose();
+    }
+}
 public interface IRunStateStore
 {
     Task<RunState?> ReadAsync(string planId, CancellationToken cancellationToken);
