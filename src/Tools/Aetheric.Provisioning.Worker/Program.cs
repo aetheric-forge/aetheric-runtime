@@ -31,11 +31,10 @@ RandomNumberGenerator.Fill(secretKey);
 
 builder.Services.AddPostSubscription(
     ProvisioningPost.RequestReference(),
-    new CampusDeploymentRequestConsumer(
+    new InstitutionDeploymentRequestConsumer(
         postProvider,
         definitionSource,
         reader,
-        new NoParentCapabilityResolver(),
         new FileRunStateStore(Path.Combine(dataDirectory, "run-state")),
         new EncryptedFileSecretStore(secretsDirectory, secretKey)));
 

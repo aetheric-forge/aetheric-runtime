@@ -2,19 +2,24 @@
 # supplies its own bindings document; this one exists to show the expected shape and to let the
 # definition be exercised locally.
 #
-# All five resources now have real Aetheric.Provisioning IResourceProviders (Redis-backed
-# Aetheric.Provisioning.Workbench.Redis; RabbitMQ-management-API-backed
-# Aetheric.Provisioning.RabbitMq; MongoDB-backed Aetheric.Provisioning.MongoDb; Keycloak-admin-
-# API-backed Aetheric.Provisioning.Keycloak; S3/MinIO-backed Aetheric.Provisioning.S3) - Stage 6
-# is complete. Whether a plan against this whole document succeeds end to end depends on how the
-# providers are constructed: Workbench's backend takes a host-injected connection rather than a
-# per-request credential (RedisWorkbenchBackend(IDatabase database)), so
-# Aetheric.Provisioning.Worker's CampusDeploymentRequestConsumer - which builds the other four
-# providers fresh per message from CampusDeploymentRequested.RootCredentials - deliberately
-# doesn't build a Workbench provider at all; driven through that Worker, a whole-campus plan still
-# reports provider.unsupported for Workbench specifically. Planning archive/library/post-office/
-# registry together (any subset, or all four) succeeds today; Workbench needs a host that composes
-# it directly, matching how AddForgeCampus already wires it into aetheric-web/aetheric-admin.
+# archive/library/post-office all have real Aetheric.Provisioning IResourceProviders (S3/MinIO-
+# backed Aetheric.Provisioning.S3; MongoDB-backed Aetheric.Provisioning.MongoDb; RabbitMQ-
+# management-API-backed Aetheric.Provisioning.RabbitMq), and workbench has one too (Redis-backed
+# Aetheric.Provisioning.Workbench.Redis). Campus is no longer the constitutional root (Article X -
+# University - is; see institution/university.yaml) - registry is no longer an owned resource here
+# at all. It's now bound as a parent dependency instead ("IRegistrar", below), resolved from the
+# University's own registry resource (Aetheric.Provisioning.Keycloak, realm "university") via a
+# live IParentCapabilityResolver check, not provisioned by this document.
+#
+# Whether a plan against this whole document succeeds end to end depends on how the providers are
+# constructed: Workbench's backend takes a host-injected connection rather than a per-request
+# credential (RedisWorkbenchBackend(IDatabase database)), so Aetheric.Provisioning.Worker's
+# consumer - which builds the other three resource providers fresh per message from the request's
+# RootCredentials - deliberately doesn't build a Workbench provider at all; driven through that
+# Worker, a whole-campus plan still reports provider.unsupported for Workbench specifically.
+# Planning archive/library/post-office together (any subset, or all three, plus IRegistrar)
+# succeeds today; Workbench needs a host that composes it directly, matching how AddForgeCampus
+# already wires it into aetheric-web/aetheric-admin.
 #
 # "workbench"'s target must match whatever target string the host's WorkbenchProvider is
 # constructed with (WorkbenchProvider(string target, ...) - a fixed identity supplied by the host,
@@ -38,9 +43,8 @@
       "provider": "rabbitmq",
       "vhost": "campus"
     },
-    "registry": {
-      "provider": "keycloak",
-      "realm": "campus"
+    "IRegistrar": {
+      "source": "university.registry"
     },
     "workbench": {
       "provider": "workbench",
