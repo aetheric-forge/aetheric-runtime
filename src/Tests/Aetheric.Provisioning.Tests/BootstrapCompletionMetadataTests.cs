@@ -42,7 +42,18 @@ public sealed class BootstrapCompletionMetadataTests
         Assert.Equal(request.RequestId, completion.Payload.RequestId);
         Assert.False(completion.Payload.Succeeded);
         Assert.Equal(BootstrapStepStatus.Failed, completion.Payload.Steps[0].Status);
-        Assert.All(completion.Payload.Steps.Skip(1), step => Assert.Equal(BootstrapStepStatus.NotAttempted, step.Status));
+        // The consumer now preflights (parses + statically plans) all four before executing any -
+        // University's mutated YAML fails on a syntax error, and the other three - the fixture's
+        // own "Example: X" placeholder text, deliberately not deployable content per the runtime
+        // README - each independently fail their own preflight too (missing descriptor.id), so
+        // every step reports its own real Failed verdict here, not a NotAttempted cascade. That's
+        // the whole point of preflighting the envelope: surfacing every structural problem in one
+        // round rather than only the first one discovered.
+        Assert.All(completion.Payload.Steps.Skip(1), step =>
+        {
+            Assert.Equal(BootstrapStepStatus.Failed, step.Status);
+            Assert.Contains("yaml.required: descriptor.id", Assert.Single(step.Issues));
+        });
         Assert.Equal(metadata.MessageId, completion.Metadata.CausationId);
         Assert.Equal(metadata.CorrelationId, completion.Metadata.CorrelationId);
         Assert.Equal(metadata.Attributes.OrderBy(pair => pair.Key), completion.Metadata.Attributes.OrderBy(pair => pair.Key));

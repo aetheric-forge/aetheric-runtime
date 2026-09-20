@@ -19,15 +19,8 @@ var definitionSource = new PublicGitHubSource(PublicGitHubSource.CreateHttpClien
 var reader = new InstitutionYamlReader();
 var dataDirectory = builder.Configuration["Provisioning:DataDirectory"] ?? Path.Combine(AppContext.BaseDirectory, "data");
 var secretsDirectory = Path.Combine(dataDirectory, "secrets");
-// TODO(Stage 6): generate and persist this key properly (matching ManagedRootCredentialStore's
-// own key-file convention) once a resource provider actually generates a secret worth keeping
-// across restarts. Ephemeral for now: a fresh random key every start, with any secret files left
-// over from a previous run's (different) key wiped first - EncryptedFileSecretStore only expects
-// FileNotFoundException from a missing secret, not a decrypt failure from a stale key, so leaving
-// old ciphertext in place would crash EnsureAsync instead of cleanly rotating it.
-if (Directory.Exists(secretsDirectory)) Directory.Delete(secretsDirectory, recursive: true);
-var secretKey = new byte[32];
-RandomNumberGenerator.Fill(secretKey);
+var secretsKeyDirectory = builder.Configuration["Provisioning:SecretsKeyDirectory"] ?? Path.Combine(dataDirectory, "secrets-key");
+var secretKey = await ResolveSecretKeyAsync(secretsDirectory, secretsKeyDirectory);
 
 var runStateStore = new FileRunStateStore(Path.Combine(dataDirectory, "run-state"));
 var secretStore = new EncryptedFileSecretStore(secretsDirectory, secretKey);
@@ -62,3 +55,29 @@ static string Required(IConfiguration configuration, string key) =>
     !string.IsNullOrWhiteSpace(configuration[key])
         ? configuration[key]!
         : throw new InvalidOperationException($"{key} is required.");
+
+// Mirrors Aetheric.Provisioning.Persistence.ManagedRootCredentialStore's own key-file convention
+// (a separate key directory; a 32-byte key created once and reused; never silently regenerated
+// once real secrets exist under it) rather than the previous "wipe secrets, fresh random key every
+// start" behavior - RabbitMQ/MongoDB/Keycloak now all generate real scoped-credential secrets that
+// ProvisioningEngine.ExecuteAsync's checkpoint-skip path reads back on a later run, so a fresh key
+// on every restart was silently discarding already-used credentials, not just harmlessly rotating
+// an unused one.
+static async Task<byte[]> ResolveSecretKeyAsync(string secretsDirectory, string keyDirectory)
+{
+    Directory.CreateDirectory(keyDirectory);
+    var keyPath = Path.Combine(keyDirectory, "secret-key.key");
+    if (File.Exists(keyPath))
+    {
+        var key = await File.ReadAllBytesAsync(keyPath);
+        if (key.Length != 32) throw new InvalidDataException("Invalid provisioning secrets encryption key.");
+        return key;
+    }
+    if (Directory.Exists(secretsDirectory) && Directory.EnumerateFiles(secretsDirectory).Any())
+        throw new InvalidDataException(
+            "Provisioning secrets encryption key is missing but secret files already exist. Restore the original key, or clear the secrets directory to start fresh.");
+    var generated = new byte[32];
+    RandomNumberGenerator.Fill(generated);
+    await File.WriteAllBytesAsync(keyPath, generated);
+    return generated;
+}

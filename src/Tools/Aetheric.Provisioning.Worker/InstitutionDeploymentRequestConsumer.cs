@@ -106,36 +106,43 @@ public sealed class InstitutionDeploymentRequestConsumer(
     /// LoadBundle (InstitutionBootstrapRequestConsumer) - the caller is responsible for loading
     /// review beforehand; this only runs once review.Loaded reflects whatever was loaded.
     /// </summary>
+    // ProvisioningPlanner.Plan requires a non-empty parent identity even for a root institution
+    // with no actual parent-contract dependencies (ParentContext defaults to ("", ""), which
+    // always fails context.missing) - LoadAsync/LoadBundle alone never call Configure, so this is
+    // required for ANY plan to become valid, not just this one. parent carries the deploying
+    // institution's *real* parent identity when it has one (e.g. Campus's University); for a root
+    // institution (parent is null), the just-loaded definition's own provenance doubles as a
+    // synthetic identity instead - "this deployment's context is the commit it was loaded from,"
+    // true regardless of what institution it is, and never actually consulted since a root plan
+    // has no CheckParent step to consult it.
+    //
+    // Capabilities is the deploying operator's own declared catalog - "I assert these contracts
+    // resolve at these sources" - and ProvisioningReview.Review() (and a raw ProvisioningPlanner
+    // .Plan() call, used by InstitutionBootstrapRequestConsumer's preflight pass) both require it
+    // to already match Bindings.ParentSources before a plan can even be produced (see
+    // ReviewTests.cs's own established pattern: `Capabilities = bindings.ParentSources`). This is
+    // not the live trust boundary - IParentCapabilityResolver.IsAvailableAsync, called during
+    // ExecuteApprovedAsync, is what actually verifies the assertion against live infrastructure.
+    // Skipping this leaves Review() rejecting every parent-dependent plan with "parent.unresolved"
+    // before the resolver is ever reached at all.
+    //
+    // Extracted as its own pure helper - rather than left inline in DeployOneAsync - specifically
+    // so the bootstrap preflight pass (a raw Plan() call with no ProvisioningReview/Engine
+    // involved) can build the identical ParentContext a real execution would use, instead of
+    // reimplementing this logic a second time and risking the two silently drifting apart.
+    internal static ParentContext ResolveParentContext(LoadedInstitution loaded, ParentIdentity? parent)
+    {
+        var self = loaded.Source.Definition.Provenance;
+        var parentContext = parent is { } p
+            ? new ParentContext(p.Repository, p.Revision)
+            : new ParentContext(self.Repository, self.Commit);
+        return parentContext with { Capabilities = loaded.Bindings.ParentSources };
+    }
+
     internal static async Task<DeploymentOutcome> DeployOneAsync(ProvisioningReview review, ParentIdentity? parent, CancellationToken ct)
     {
-        // ProvisioningPlanner.Plan requires a non-empty parent identity even for a root
-        // institution with no actual parent-contract dependencies (ParentContext defaults to
-        // ("", ""), which always fails context.missing) - LoadAsync/LoadBundle alone never call
-        // Configure, so this is required for ANY plan to become valid, not just this one.
-        // parent carries the deploying institution's *real* parent identity when it has one (e.g.
-        // Campus's University); for a root institution (parent is null), the just-loaded
-        // definition's own provenance doubles as a synthetic identity instead - "this
-        // deployment's context is the commit it was loaded from," true regardless of what
-        // institution it is, and never actually consulted since a root plan has no CheckParent
-        // step to consult it.
-        //
-        // Capabilities is the deploying operator's own declared catalog - "I assert these
-        // contracts resolve at these sources" - and ProvisioningReview.Review() requires it
-        // to already match Bindings.ParentSources before a plan can even be produced (see
-        // ReviewTests.cs's own established pattern: `Capabilities = bindings.ParentSources`).
-        // This is not the live trust boundary - IParentCapabilityResolver.IsAvailableAsync,
-        // called during ExecuteApprovedAsync, is what actually verifies the assertion against
-        // live infrastructure. Skipping this leaves Review() rejecting every parent-dependent
-        // plan with "parent.unresolved" before the resolver is ever reached at all.
         if (review.Loaded is not null)
-        {
-            var self = review.Loaded.Source.Definition.Provenance;
-            var parentContext = parent is { } p
-                ? new ParentContext(p.Repository, p.Revision)
-                : new ParentContext(self.Repository, self.Commit);
-            parentContext = parentContext with { Capabilities = review.Bindings!.ParentSources };
-            review.Configure(review.Bindings!, parentContext);
-        }
+            review.Configure(review.Bindings!, ResolveParentContext(review.Loaded, parent));
 
         var result = review.Review();
         if (!result.IsValid)
