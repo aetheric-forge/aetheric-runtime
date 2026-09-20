@@ -10,6 +10,9 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Aetheric.Provisioning.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Definitions/Aetheric.Provisioning.Definitions.csproj" />
     <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Application/Aetheric.Provisioning.Application.csproj" />
     <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Engine/Aetheric.Provisioning.Engine.csproj" />
