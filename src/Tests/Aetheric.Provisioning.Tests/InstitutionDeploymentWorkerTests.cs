@@ -239,7 +239,7 @@ public sealed class InstitutionDeploymentWorkerTests
 
             var campusRequestId = Guid.NewGuid();
             var campusWait = multiResult.Expect(campusRequestId);
-            var parent = new ParentIdentity("https://example.test/fixture", "0000000000000000000000000000000000000000", realm);
+            var parent = new ParentIdentity("https://example.test/fixture", "0000000000000000000000000000000000000000", new Dictionary<string, string> { ["IRegistrar"] = realm });
             await postProvider.PublishAsync(new PostEnvelope<InstitutionDeploymentRequested>(
                 ProvisioningPost.RequestReference(),
                 new InstitutionDeploymentRequested(campusRequestId, "https://example.test/fixture",
@@ -288,7 +288,7 @@ public sealed class InstitutionDeploymentWorkerTests
 
             var campusRequestId = Guid.NewGuid();
             var campusWait = multiResult.Expect(campusRequestId);
-            var parent = new ParentIdentity("https://example.test/fixture", "0000000000000000000000000000000000000000", neverCreatedRealm);
+            var parent = new ParentIdentity("https://example.test/fixture", "0000000000000000000000000000000000000000", new Dictionary<string, string> { ["IRegistrar"] = neverCreatedRealm });
             await postProvider.PublishAsync(new PostEnvelope<InstitutionDeploymentRequested>(
                 ProvisioningPost.RequestReference(),
                 new InstitutionDeploymentRequested(campusRequestId, "https://example.test/fixture",

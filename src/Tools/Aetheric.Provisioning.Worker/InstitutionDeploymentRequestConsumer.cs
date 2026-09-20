@@ -187,18 +187,47 @@ public sealed class InstitutionDeploymentRequestConsumer(
         return providers;
     }
 
-    // parent is only non-null for a non-root institution (e.g. Campus) - and the only real
-    // parent contract that exists today is IRegistrar, so this only ever needs to build one kind
-    // of resolver. Missing the "keycloak" credential falls back to NoParentCapabilityResolver
-    // rather than crashing - "cannot verify" correctly reports as "unavailable", not silent
-    // success.
+    // parent is only non-null for a non-root institution (e.g. Campus). Builds one sub-resolver
+    // per contract this deployment actually declared a location for - each needs both a root
+    // credential for its system and a ParentIdentity.ResourceLocations entry; missing either
+    // means that one contract just isn't recognized by the composite, which already means
+    // "unavailable" (the correct fallback - "cannot verify" is not silent success). Falls back to
+    // NoParentCapabilityResolver entirely only when parent itself is null (root institution) or
+    // no sub-resolver could be built at all.
     internal static IParentCapabilityResolver BuildResolver(ParentIdentity? parent, IReadOnlyDictionary<string, RootCredentialPayload> credentials)
     {
         if (parent is not { } p) return new NoParentCapabilityResolver();
-        if (!credentials.TryGetValue("keycloak", out var keycloak)) return new NoParentCapabilityResolver();
-        return new KeycloakRealmParentCapabilityResolver(new RootCredential(keycloak.Host, keycloak.Port, keycloak.Username, keycloak.Password)
+
+        var resolvers = new List<IParentCapabilityResolver>();
+        if (p.ResourceLocations.TryGetValue("IRegistrar", out var realm) && credentials.TryGetValue("keycloak", out var keycloak))
         {
-            Keycloak = new KeycloakRootOptions(keycloak.Scheme ?? "https", keycloak.BasePath ?? "/", keycloak.Realm ?? "master")
-        }, p.RegistryRealm);
+            resolvers.Add(new KeycloakRealmParentCapabilityResolver(new RootCredential(keycloak.Host, keycloak.Port, keycloak.Username, keycloak.Password)
+            {
+                Keycloak = new KeycloakRootOptions(keycloak.Scheme ?? "https", keycloak.BasePath ?? "/", keycloak.Realm ?? "master")
+            }, realm));
+        }
+        if (p.ResourceLocations.TryGetValue("IPostOffice", out var vhost) && credentials.TryGetValue("rabbitmq", out var rabbitMq))
+        {
+            resolvers.Add(new RabbitMqVhostParentCapabilityResolver(new RootCredential(rabbitMq.Host, rabbitMq.Port, rabbitMq.Username, rabbitMq.Password)
+            {
+                RabbitMq = new RabbitMqRootOptions(rabbitMq.Scheme ?? "http", rabbitMq.BasePath ?? "/")
+            }, vhost));
+        }
+        if (p.ResourceLocations.TryGetValue("IArchive", out var bucket) && credentials.TryGetValue("s3", out var s3))
+        {
+            resolvers.Add(new S3BucketParentCapabilityResolver(new RootCredential(s3.Host, s3.Port, s3.Username, s3.Password)
+            {
+                S3 = new S3RootOptions(s3.Scheme ?? "https")
+            }, bucket));
+        }
+        if (p.ResourceLocations.TryGetValue("ILibrary", out var owningInstitutionId) && credentials.TryGetValue("mongo", out var mongo))
+        {
+            resolvers.Add(new MongoDbLibraryParentCapabilityResolver(new RootCredential(mongo.Host, mongo.Port, mongo.Username, mongo.Password)
+            {
+                Mongo = new MongoRootOptions(mongo.AuthDatabase ?? "admin")
+            }, owningInstitutionId));
+        }
+
+        return resolvers.Count == 0 ? new NoParentCapabilityResolver() : new CompositeParentCapabilityResolver(resolvers);
     }
 }

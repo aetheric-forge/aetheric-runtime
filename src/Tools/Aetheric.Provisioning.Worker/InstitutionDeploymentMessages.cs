@@ -40,11 +40,20 @@ public sealed record RootCredentialPayload(
 /// The deploying institution's real parent identity - null for a root institution (e.g.
 /// University itself), non-null for anything with a real "dependencies" block in its own
 /// definition (e.g. Campus's IRegistrar dependency on University). Repository/Revision become
-/// the plan's ParentContext identity; RegistryRealm is the one piece of the parent's own binding
-/// KeycloakRealmParentCapabilityResolver needs to perform its live check - the deploying operator
-/// already knows it, since they triggered the parent's own deployment first.
+/// the plan's ParentContext identity.
+///
+/// ResourceLocations carries whatever each declared contract's own live-verifying resolver needs
+/// to perform its check - keyed by contract name ("IRegistrar"/"IArchive"/"IPostOffice" -> the
+/// realm/bucket/vhost that actually owns it), the deploying operator already knows these, since
+/// they triggered that ancestor's own deployment first. "ILibrary" is the one exception: Mongo
+/// creates databases lazily on write and this provisioner never writes data, so "does the
+/// database exist" isn't a reliable signal - the live check instead verifies the scoped user the
+/// owning level's own MongoDbResourceProvider actually created, which needs BOTH the database
+/// name and which institution owns it. Encoded as a single "{database}@{owningInstitutionId}"
+/// string rather than a second parallel dictionary just for one contract's extra field - neither
+/// a Mongo database name nor an institution id slug can contain "@".
 /// </summary>
-public sealed record ParentIdentity(string Repository, string Revision, string RegistryRealm);
+public sealed record ParentIdentity(string Repository, string Revision, IReadOnlyDictionary<string, string> ResourceLocations);
 
 public sealed record InstitutionDeploymentCompleted(
     Guid RequestId,
