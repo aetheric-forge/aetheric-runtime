@@ -109,9 +109,7 @@ public sealed class InstitutionBootstrapRequestConsumer(
         var envelope = new PostEnvelope<InstitutionBootstrapCompleted>(
             ProvisioningBootstrapPost.ResultReference(),
             completed,
-            new PostMetadata(
-                correlationId: initiator.CorrelationId ?? initiator.MessageId,
-                causationId: initiator.MessageId));
+            BootstrapPostMetadata.CreateCompletion(initiator, completedAtUtc: completed.CompletedAtUtc));
 
         await postProvider.PublishAsync(envelope, ct);
     }

@@ -1,0 +1,52 @@
+{
+  "Reference": {
+    "Domain": "provisioning",
+    "Address": "institution/deploy/bootstrap/result",
+    "Contract": {
+      "Name": "institution-bootstrap-completed",
+      "Version": "1.0",
+      "Intent": 1
+    },
+    "Qualifiers": {}
+  },
+  "Metadata": {
+    "MessageId": "00000006-0000-0000-0000-000000000000",
+    "CorrelationId": "00000002-0000-0000-0000-000000000000",
+    "CausationId": "00000001-0000-0000-0000-000000000000",
+    "ProducedAtUtc": "2026-09-20T12:01:00+00:00",
+    "Attributes": {
+      "bootstrap.priority": "Standard",
+      "bootstrap.university-request-id": "00000002-0000-0000-0000-000000000000",
+      "bootstrap.campus-request-id": "00000003-0000-0000-0000-000000000000",
+      "bootstrap.administration-faculty-request-id": "00000004-0000-0000-0000-000000000000",
+      "bootstrap.decisions-request-id": "00000005-0000-0000-0000-000000000000"
+    }
+  },
+  "Payload": {
+    "RequestId": "00000001-0000-0000-0000-000000000000",
+    "Succeeded": true,
+    "Steps": [
+      {
+        "Step": "University",
+        "Status": 0,
+        "Issues": []
+      },
+      {
+        "Step": "Campus",
+        "Status": 0,
+        "Issues": []
+      },
+      {
+        "Step": "AdministrationFaculty",
+        "Status": 0,
+        "Issues": []
+      },
+      {
+        "Step": "Decisions",
+        "Status": 0,
+        "Issues": []
+      }
+    ],
+    "CompletedAtUtc": "2026-09-20T12:01:00+00:00"
+  }
+}
