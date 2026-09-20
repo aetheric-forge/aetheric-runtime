@@ -1,0 +1,91 @@
+{
+  "Reference": {
+    "Domain": "provisioning",
+    "Address": "institution/deploy/bootstrap",
+    "Contract": {
+      "Name": "institution-bootstrap-requested",
+      "Version": "1.0",
+      "Intent": 0
+    },
+    "Qualifiers": {}
+  },
+  "Metadata": {
+    "MessageId": "00000001-0000-0000-0000-000000000000",
+    "CorrelationId": "00000002-0000-0000-0000-000000000000",
+    "CausationId": null,
+    "ProducedAtUtc": "2026-09-20T12:00:00+00:00",
+    "Attributes": {
+      "bootstrap.priority": "Standard",
+      "bootstrap.university-request-id": "00000002-0000-0000-0000-000000000000",
+      "bootstrap.campus-request-id": "00000003-0000-0000-0000-000000000000",
+      "bootstrap.administration-faculty-request-id": "00000004-0000-0000-0000-000000000000",
+      "bootstrap.decisions-request-id": "00000005-0000-0000-0000-000000000000"
+    }
+  },
+  "Payload": {
+    "RequestId": "00000001-0000-0000-0000-000000000000",
+    "University": {
+      "DefinitionYaml": "# Wire fixture only: University\ndescriptor:\n  name: \"Example: University\"\n",
+      "BindingsYaml": "# Wire fixture only: University\ndeployment:\n  name: contract-test\n"
+    },
+    "Campus": {
+      "DefinitionYaml": "# Wire fixture only: Campus\ndescriptor:\n  name: \"Example: Campus\"\n",
+      "BindingsYaml": "# Wire fixture only: Campus\ndeployment:\n  name: contract-test\n"
+    },
+    "AdministrationFaculty": {
+      "DefinitionYaml": "# Wire fixture only: AdministrationFaculty\ndescriptor:\n  name: \"Example: AdministrationFaculty\"\n",
+      "BindingsYaml": "# Wire fixture only: AdministrationFaculty\ndeployment:\n  name: contract-test\n"
+    },
+    "Decisions": {
+      "DefinitionYaml": "# Wire fixture only: Decisions\ndescriptor:\n  name: \"Example: Decisions\"\n",
+      "BindingsYaml": "# Wire fixture only: Decisions\ndeployment:\n  name: contract-test\n"
+    },
+    "RootCredentials": {
+      "rabbitmq": {
+        "Host": "rabbitmq.example.invalid",
+        "Port": 443,
+        "Username": "fixture-user",
+        "Password": "NOT-A-REAL-SECRET",
+        "AuthDatabase": null,
+        "Database": null,
+        "Scheme": "https",
+        "BasePath": "/management",
+        "Realm": null
+      },
+      "mongo": {
+        "Host": "mongo.example.invalid",
+        "Port": 443,
+        "Username": "fixture-user",
+        "Password": "NOT-A-REAL-SECRET",
+        "AuthDatabase": "admin",
+        "Database": null,
+        "Scheme": null,
+        "BasePath": null,
+        "Realm": null
+      },
+      "keycloak": {
+        "Host": "keycloak.example.invalid",
+        "Port": 443,
+        "Username": "fixture-user",
+        "Password": "NOT-A-REAL-SECRET",
+        "AuthDatabase": null,
+        "Database": null,
+        "Scheme": "https",
+        "BasePath": "/",
+        "Realm": "master"
+      },
+      "s3": {
+        "Host": "s3.example.invalid",
+        "Port": 443,
+        "Username": "fixture-user",
+        "Password": "NOT-A-REAL-SECRET",
+        "AuthDatabase": null,
+        "Database": null,
+        "Scheme": "https",
+        "BasePath": null,
+        "Realm": null
+      }
+    },
+    "RequestedAtUtc": "2026-09-20T12:00:00+00:00"
+  }
+}
