@@ -13,15 +13,28 @@
 # Office/Registrar; workbench.md §2 separately claims Workbench as campus-mandatory too. This
 # definition follows the union of both (all five), not campus.md's incomplete list.
 #
+# Campus is no longer the constitutional root (Article X - University - is); Registry/Registrar is
+# now University-owned and shared across every Campus within it (campus.md §10, university.yaml's
+# own "registry" resource), so Campus's own registry resource below is "ownership: parent", sourced
+# through the "dependencies" block rather than provisioned directly - the same shape
+# fixtures/decisions/decisions-institution.yaml already uses for its own inherited resources.
+#
 # Faculty is not resource-backed (it groups descendant Institutions under a Dean; it owns no
-# external infrastructure), so unlike the other five it has a capability but no "resources" entry.
+# external infrastructure), so unlike the other four owned resources it has a capability but no
+# "resources" entry.
 {
   "descriptor": {
     "id": "campus",
     "name": "Campus",
     "version": "1.0.0",
-    "description": "The unique root Institution of an institutional hierarchy (Constitutional Article VI). Maintains an Archive, Library, Post Office, Registry, and Workbench, and composes descendant Institutions through Faculties."
+    "description": "An Institution existing as a descendant of a University (Constitutional Article X). Maintains an Archive, Library, Post Office, and Workbench directly, inherits a shared Registry from its University, and composes descendant Institutions through Faculties."
   },
+  "dependencies": [
+    {
+      "contract": "IRegistrar",
+      "reason": "Authoritative membership/identity backing member and maintainer roles, shared across every Campus within the University."
+    }
+  ],
   "domains": [
     {
       "id": "archive-stewardship",
@@ -131,9 +144,9 @@
     {
       "id": "registry",
       "name": "Registry",
-      "description": "The authoritative record of identities, roles, relationships, credentials, and other institutional facts recognized within the Campus.",
+      "description": "The authoritative record of identities, roles, relationships, credentials, and other institutional facts recognized within the Campus. Inherited from the University (see the IRegistrar dependency above), not provisioned by the Campus itself.",
       "type": "identity",
-      "ownership": "owned"
+      "ownership": "parent"
     },
     {
       "id": "workbench",
@@ -145,11 +158,6 @@
   ],
   "workflows": [],
   "policies": [
-    {
-      "id": "root-authority",
-      "name": "Root Authority",
-      "description": "The Campus possesses no parent Institution and represents the highest level of structural authority within its own hierarchy (Article VI §3)."
-    },
     {
       "id": "explicit-containment",
       "name": "Explicit Containment",

@@ -1,0 +1,22 @@
+# Example "development" deployment bindings for institution/university.yaml. A real deployment
+# supplies its own bindings document; this one exists to show the expected shape and to let the
+# definition be exercised locally.
+#
+# "registry" has a real Aetheric.Provisioning IResourceProvider (Keycloak-admin-API-backed
+# Aetheric.Provisioning.Keycloak). This realm ("university") is what institution/campus.bindings
+# .yaml's own IRegistrar dependency ("source": "university.registry") resolves against - a Campus
+# deployed under this University must be given this same realm name so its
+# KeycloakRealmParentCapabilityResolver checks the right one.
+{
+  "institution": "university",
+  "version": "1.0.0",
+  "deployment": {
+    "name": "development"
+  },
+  "bindings": {
+    "registry": {
+      "provider": "keycloak",
+      "realm": "university"
+    }
+  }
+}

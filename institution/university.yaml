@@ -1,0 +1,74 @@
+# Hand-authored, not generated - matches institution/campus.yaml's own convention. Validated
+# against aetheric-provisioning's InstitutionYamlReader schema. YAML 1.2 (JSON flow syntax).
+#
+# Models the one Institution Constitutional Article X requires every University to maintain - a
+# Registrar (docs/specs/registrar.md; code/folder name "Registry", constitutional article name
+# "Registrar" - same name, two spellings), shared across every Campus the University contains
+# rather than each Campus maintaining its own (university.md §6, campus.md §10). University is the
+# new constitutional root (Article X) that institution/campus.yaml now descends from - see
+# campus.yaml's own "dependencies" block for the IRegistrar contract this resource satisfies.
+{
+  "descriptor": {
+    "id": "university",
+    "name": "University",
+    "version": "1.0.0",
+    "description": "The unique root Institution of an institutional hierarchy (Constitutional Article X). Maintains a Registry shared across every Campus it contains."
+  },
+  "domains": [
+    {
+      "id": "identity-and-standing",
+      "name": "Identity and Standing",
+      "description": "Recording and attesting the institutional facts - identities, roles, relationships, credentials - recognized across every Campus within the University.",
+      "requiredCapabilities": [
+        "provide-registry"
+      ]
+    },
+    {
+      "id": "organizational-composition",
+      "name": "Organizational Composition",
+      "description": "Containing one or more Campuses beneath the University.",
+      "requiredCapabilities": [
+        "compose-campus"
+      ]
+    }
+  ],
+  "organizations": [],
+  "roles": [],
+  "capabilities": [
+    {
+      "id": "provide-registry",
+      "name": "Provide Registry",
+      "description": "Maintain and expose the University's Registry so every Campus it contains may establish authoritative identities, roles, and other institutional facts through it."
+    },
+    {
+      "id": "compose-campus",
+      "name": "Compose Campus",
+      "description": "Contain one or more Campuses beneath the University."
+    }
+  ],
+  "resources": [
+    {
+      "id": "registry",
+      "name": "Registry",
+      "description": "The authoritative record of identities, roles, relationships, credentials, and other institutional facts recognized across every Campus within the University.",
+      "type": "identity",
+      "ownership": "owned"
+    }
+  ],
+  "workflows": [],
+  "policies": [
+    {
+      "id": "root-authority",
+      "name": "Root Authority",
+      "description": "The University possesses no parent Institution and represents the highest level of structural authority within its own hierarchy (Article X §3)."
+    },
+    {
+      "id": "explicit-containment",
+      "name": "Explicit Containment",
+      "description": "Institutional containment SHALL NOT be inferred from communication, collaboration, governance, or operational interaction; only explicit parent-child relationships define structural containment (Article X §7)."
+    }
+  ],
+  "initialState": {
+    "configuration": {}
+  }
+}

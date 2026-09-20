@@ -4,11 +4,11 @@
 
 ### §1. Definition
 
-A **Campus** is the unique root Institution of an institutional hierarchy.
+A **Campus** is an Institution existing as a descendant of a University (Article X), from which it derives its structural context.
 
-Every institutional hierarchy **SHALL** contain exactly one Campus, from which all other Institutions derive their structural context.
+A University **MAY** contain one or more Campuses.
 
-The Campus establishes the identity, continuity, and constitutional boundary of the hierarchy.
+The Campus establishes the identity, continuity, and operational boundary of its own descendant hierarchy.
 
 ---
 
@@ -20,23 +20,23 @@ It serves as the constitutional anchor for governance, identity, membership, arc
 
 ---
 
-### §3. Root Authority
+### §3. Standing Within the University
 
-The Campus possesses no parent Institution.
+The Campus possesses a University (Article X) as its parent Institution.
 
-It represents the highest level of structural authority within its own hierarchy.
+It represents the highest level of structural authority within its own descendant hierarchy, subordinate only to its University.
 
-No Institution may exist outside the Campus that defines its context.
+No Institution may exist outside the Campus that defines its context, except the University itself.
 
 ---
 
 ### §4. Recursive Hierarchy
 
-Every Institution other than the Campus **SHALL** exist as a descendant of exactly one parent Institution.
+Every Institution other than the University (Article X) **SHALL** exist as a descendant of exactly one parent Institution.
 
 This recursive relationship forms a rooted, directed, acyclic hierarchy.
 
-The Campus constitutes the root of this hierarchy.
+The Campus constitutes the root of its own descendant hierarchy, within the larger hierarchy rooted at its University.
 
 ---
 
@@ -89,7 +89,7 @@ The Campus defines the common context in which:
 
 ### §10. Institutional Capabilities
 
-Every Campus **SHALL** maintain:
+Every Campus **SHALL** maintain, whether directly or by inheritance from its University:
 
 - An Archive
 - A Library
@@ -97,6 +97,8 @@ Every Campus **SHALL** maintain:
 - A Registrar
 
 These Institutions serve the Campus and **MAY** serve descendant Institutions through the institutional hierarchy.
+
+A Registrar inherited from the University **SHALL** be shared across every Campus within that University, rather than maintained separately by each.
 
 The requirement that a Campus maintain these capabilities **SHALL NOT** make them intrinsic properties of every Institution.
 
@@ -122,10 +124,10 @@ Implementations **SHALL** preserve the constitutional properties defined herein.
 
 Every Campus **SHALL** preserve the following invariants:
 
-- Every institutional hierarchy contains exactly one Campus.
-- The Campus has no parent Institution.
-- Every other Institution is a descendant of the Campus.
+- Every Campus has a University as its parent Institution.
+- A University **MAY** contain one or more Campuses.
+- Every Institution other than the Campus's University is a descendant of the Campus.
 - Institutional containment forms a rooted, acyclic hierarchy.
 - Structural containment **SHALL NOT** be inferred from communication or collaboration.
-- The Campus defines the constitutional context of the hierarchy.
-- The Campus maintains an Archive, Library, Post Office, and Registrar.
+- The Campus defines the constitutional context of its own descendant hierarchy.
+- The Campus maintains an Archive, Library, and Post Office, and maintains or inherits a Registrar.
