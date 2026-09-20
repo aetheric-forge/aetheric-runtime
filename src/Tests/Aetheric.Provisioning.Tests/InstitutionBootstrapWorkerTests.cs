@@ -254,15 +254,20 @@ public sealed class InstitutionBootstrapWorkerTests
         {
             var requestId = Guid.NewGuid();
             var wait = results.Expect(requestId);
-            // No "keycloak" credential at all - University's own owned registry resource has no
-            // provider registered for it, so University itself fails cleanly.
+            // A wrong Keycloak password, not a missing credential entirely: the "keycloak"
+            // provider IS registered (so University passes preflight - its structure is
+            // perfectly valid), but University's own live EnsureAsync call genuinely fails to
+            // authenticate, exercising an *execution*-time failure specifically, not a preflight
+            // one (which a missing credential would instead be, and is covered by
+            // InstitutionBootstrapWorkerTests's own preflight-focused test below).
+            var wrongKeycloakCredential = KeycloakCredential() with { Password = "wrong-password" };
             var request = new InstitutionBootstrapRequested(
                 requestId,
                 University("unused-realm"),
                 DependentLevel("campus"),
                 DependentLevel("administration-faculty"),
                 DependentLevel("decisions"),
-                new Dictionary<string, RootCredentialPayload>(),
+                new Dictionary<string, RootCredentialPayload> { ["keycloak"] = wrongKeycloakCredential },
                 DateTimeOffset.UtcNow);
             await postProvider.PublishAsync(new PostEnvelope<InstitutionBootstrapRequested>(
                 ProvisioningBootstrapPost.RequestReference(), request, new PostMetadata()));
@@ -273,6 +278,68 @@ public sealed class InstitutionBootstrapWorkerTests
             Assert.False(payload.Succeeded);
             Assert.Equal(BootstrapStepStatus.Failed, payload.Steps[0].Status);
             Assert.All(payload.Steps.Skip(1), step => Assert.Equal(BootstrapStepStatus.NotAttempted, step.Status));
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// The preflight counterpart to the execution-time test above: Campus names an unsupported
+    /// provider for an owned resource - University's own definition is perfectly valid and would
+    /// succeed if it ever ran, but the whole envelope still never executes anything, because
+    /// preflight checks all four before any of them touches live infrastructure. The real proof
+    /// isn't the reported status (that alone can't distinguish "never attempted" from "attempted
+    /// and rolled back" - provisioning isn't transactional) - it's that University's realm was
+    /// never actually created live.
+    /// </summary>
+    [AllStage6ProvidersFact]
+    public async Task Worker_consumer_never_touches_live_infrastructure_when_a_later_step_fails_preflight()
+    {
+        var connection = Environment.GetEnvironmentVariable("PROVISIONING_TEST_RABBITMQ")!;
+        await using var postProvider = new RabbitMqPostProvider(ProvisioningPost.Domain, connection);
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        var universityRealm = "test-university-" + suffix;
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "aetheric-provisioning-bootstrap-test-" + Guid.NewGuid().ToString("N"));
+        var consumer = BuildConsumer(tempDirectory);
+        await postProvider.SubscribeAsync(ProvisioningBootstrapPost.RequestReference(), consumer);
+        var results = new MultiCompletionConsumer();
+        await postProvider.SubscribeAsync(ProvisioningBootstrapPost.ResultReference(), results);
+
+        try
+        {
+            var requestId = Guid.NewGuid();
+            var wait = results.Expect(requestId);
+            var university = Fixture("university", new Dictionary<string, object> { ["registry"] = new { provider = "keycloak", realm = universityRealm } });
+            // Nothing this Worker registers matches this provider name, so Campus fails preflight
+            // with provider.unsupported specifically - before either University or Campus is ever
+            // executed.
+            var campus = Fixture("campus", new Dictionary<string, object> { ["archive"] = new { provider = "not-a-real-provider" } });
+            var administrationFaculty = Fixture("administration-faculty", new Dictionary<string, object>());
+            var decisions = Fixture("decisions", new Dictionary<string, object>());
+
+            var request = new InstitutionBootstrapRequested(
+                requestId, university, campus, administrationFaculty, decisions,
+                new Dictionary<string, RootCredentialPayload> { ["keycloak"] = KeycloakCredential() },
+                DateTimeOffset.UtcNow);
+            await postProvider.PublishAsync(new PostEnvelope<InstitutionBootstrapRequested>(
+                ProvisioningBootstrapPost.RequestReference(), request, new PostMetadata()));
+
+            var completed = await wait.Envelope.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            var payload = completed.Payload;
+
+            Assert.False(payload.Succeeded);
+            // University's own definition is perfectly valid - it reports its real preflight
+            // status, not NotAttempted, even though the envelope as a whole never executes.
+            Assert.Equal(BootstrapStepStatus.Succeeded, payload.Steps[0].Status);
+            Assert.Equal(BootstrapStepStatus.Failed, payload.Steps[1].Status);
+            Assert.Contains("provider.unsupported", Assert.Single(payload.Steps[1].Issues));
+
+            using var realmCheck = new Aetheric.Provisioning.Keycloak.KeycloakRealmParentCapabilityResolver(
+                KeycloakFactAttribute.RootCredential(), universityRealm);
+            Assert.False(await realmCheck.IsAvailableAsync(
+                new ParentContext("x", "0000000000000000000000000000000000000000"), "IRegistrar", "x", default));
         }
         finally
         {

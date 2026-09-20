@@ -18,15 +18,21 @@ namespace Aetheric.Provisioning.Worker;
 /// Campus or Decisions, not treated as composition-only (its runtime IFaculty/DI-composition
 /// question is a separate, already-deferred concern from what gets provisioned here).
 ///
-/// Any provisioning failure short-circuits the rest of the sequence - the remaining steps are
-/// reported NotAttempted, not silently skipped or run anyway.
+/// Runs in two passes. Preflight (pure, no live I/O) parses and statically plans all four before
+/// executing any of them - provisioning isn't transactional, so University could otherwise be
+/// fully (and irreversibly) provisioned before a syntax error or an unsupported provider in
+/// Campus's own YAML is ever discovered. Only if every one of the four passes preflight does
+/// execution begin; any *execution-time* failure still short-circuits the rest (reported
+/// NotAttempted) exactly as before - that risk class (a resource an ancestor claims to own but
+/// doesn't actually have live) can't be preflighted without side effects, and isn't what the
+/// preflight pass addresses.
 ///
 /// Nearest owning ancestor: each level's own submitted bindings decide, per resource, whether it
 /// privatizes (ownership: owned) or inherits (ownership: parent, a dependencies entry) each of
 /// Registry/Archive/Library/Post Office independently - a level can privatize one and inherit the
 /// rest. Since privatization means the nearest ancestor in the org chart isn't necessarily the
 /// nearest ancestor that *owns* a given resource, this consumer resolves each dependency itself
-/// by walking the chain of already-deployed ancestors from nearest to furthest (University is the
+/// by walking the chain of already-parsed ancestors from nearest to furthest (University is the
 /// base case for Registry - it always owns it, per docs/specs/university.md §6) and using
 /// whichever level's own submitted setting actually owns it. This is resolved statically from the
 /// four submitted definitions, not via a live multi-hop lookup service - the Worker already has
@@ -39,47 +45,114 @@ public sealed class InstitutionBootstrapRequestConsumer(
     ISecretStore secretStore)
     : MessageConsumerBase<InstitutionBootstrapRequested>
 {
+    private static readonly (string Step, string Id)[] Slots =
+    [
+        ("University", "university"),
+        ("Campus", "campus"),
+        ("AdministrationFaculty", "administration-faculty"),
+        ("Decisions", "decisions"),
+    ];
+
     public override IPostContract Contract => ProvisioningBootstrapPost.RequestReference().Contract;
 
     public override async Task ConsumeAsync(InstitutionBootstrapRequested message, IPostContext context, CancellationToken ct = default)
     {
-        var steps = ImmutableArray.CreateBuilder<BootstrapStepResult>();
+        var configs = new[] { message.University, message.Campus, message.AdministrationFaculty, message.Decisions };
+        var parsed = new (SourceBundle Bundle, LoadedInstitution? Institution, ImmutableArray<ValidationIssue> Issues)[Slots.Length];
+        for (var i = 0; i < Slots.Length; i++)
+        {
+            var bundle = InlineSourceDocuments.Build(Slots[i].Id, configs[i]);
+            var result = reader.Read(bundle);
+            parsed[i] = (bundle, result.Institution, result.Issues);
+        }
+
+        var (chain, preflight, preflightPassed) = Preflight(parsed, message.RootCredentials);
+        if (!preflightPassed)
+        {
+            await PublishCompletionAsync(message, context, false, preflight, ct);
+            return;
+        }
+
+        var executed = await ExecuteAsync(parsed, chain, message.RootCredentials, ct);
+        await PublishCompletionAsync(message, context, executed.Succeeded, executed.Steps, ct);
+    }
+
+    /// <summary>
+    /// Parses are already done by the time this runs. Statically plans each of the four (a raw
+    /// ProvisioningPlanner.Plan() call - no ProvisioningReview/Engine involved, nothing executed)
+    /// to catch provider.unsupported/dependency.binding_missing/structural binding issues before
+    /// any live infrastructure is touched. A level that failed to parse halts chain growth (a
+    /// later level's dependency resolution against a nonexistent ancestor isn't meaningful) but
+    /// every level still gets its own real, independent preflight verdict - a downstream level
+    /// reporting Succeeded here means "my own definition is structurally sound, assuming my
+    /// declared ancestor exists," not a claim that an earlier-failed ancestor is actually fine;
+    /// the envelope as a whole still won't execute if anything failed preflight.
+    /// </summary>
+    private static (List<DeployedLevel> Chain, ImmutableArray<BootstrapStepResult> Results, bool Passed) Preflight(
+        (SourceBundle Bundle, LoadedInstitution? Institution, ImmutableArray<ValidationIssue> Issues)[] parsed,
+        IReadOnlyDictionary<string, RootCredentialPayload> credentials)
+    {
         var chain = new List<DeployedLevel>();
+        var results = ImmutableArray.CreateBuilder<BootstrapStepResult>(Slots.Length);
+        var passed = true;
+
+        for (var i = 0; i < parsed.Length; i++)
+        {
+            var (_, institution, parseIssues) = parsed[i];
+            if (institution is null)
+            {
+                passed = false;
+                results.Add(new BootstrapStepResult(Slots[i].Step, BootstrapStepStatus.Failed,
+                    parseIssues.Select(issue => $"{issue.Code}: {issue.Target} - {issue.Message}").ToArray()));
+                continue;
+            }
+
+            var parent = BuildParentIdentity(chain, institution.Requirements);
+            var providers = InstitutionDeploymentRequestConsumer.BuildProviders(credentials);
+            try
+            {
+                var parentContext = InstitutionDeploymentRequestConsumer.ResolveParentContext(institution, parent);
+                var input = new PlanningInput(institution.Requirements, institution.Bindings, parentContext,
+                    institution.Source.Definition.Provenance, institution.Source.Bindings.Provenance);
+                var planResult = new ProvisioningPlanner(providers).Plan(input);
+                if (!planResult.IsValid) passed = false;
+                results.Add(new BootstrapStepResult(Slots[i].Step,
+                    planResult.IsValid ? BootstrapStepStatus.Succeeded : BootstrapStepStatus.Failed,
+                    planResult.Issues.Select(issue => $"{issue.Code}: {issue.Target} - {issue.Message}").ToArray()));
+            }
+            finally
+            {
+                foreach (var provider in providers) (provider as IDisposable)?.Dispose();
+            }
+
+            chain.Add(new DeployedLevel(institution.Source.Definition.Provenance, institution.Requirements, institution.Bindings));
+        }
+
+        return (chain, results.MoveToImmutable(), passed);
+    }
+
+    /// <summary>Every level already passed preflight, so this rebuilds each parent identity against the same (now-complete) chain rather than reuse Preflight's - only the prefix up to the current level, matching Preflight's own incremental view at that point.</summary>
+    private async Task<(bool Succeeded, ImmutableArray<BootstrapStepResult> Steps)> ExecuteAsync(
+        (SourceBundle Bundle, LoadedInstitution? Institution, ImmutableArray<ValidationIssue> Issues)[] parsed,
+        List<DeployedLevel> chain,
+        IReadOnlyDictionary<string, RootCredentialPayload> credentials,
+        CancellationToken ct)
+    {
+        var steps = ImmutableArray.CreateBuilder<BootstrapStepResult>(Slots.Length);
         var allSucceeded = true;
 
-        var items = new (string Step, string Id, InstitutionConfig Config)[]
-        {
-            ("University", "university", message.University),
-            ("Campus", "campus", message.Campus),
-            ("AdministrationFaculty", "administration-faculty", message.AdministrationFaculty),
-            ("Decisions", "decisions", message.Decisions),
-        };
-
-        foreach (var (step, id, config) in items)
+        for (var i = 0; i < parsed.Length; i++)
         {
             if (!allSucceeded)
             {
-                steps.Add(new BootstrapStepResult(step, BootstrapStepStatus.NotAttempted, []));
+                steps.Add(new BootstrapStepResult(Slots[i].Step, BootstrapStepStatus.NotAttempted, []));
                 continue;
             }
 
-            var bundle = InlineSourceDocuments.Build(id, config);
-            // Requirements/Bindings are needed to choose a parent identity before the real
-            // ProvisioningEngine/resolver can be constructed (their constructors are immutable) -
-            // reader.Read is a pure parse with no I/O, so parsing once here and again inside
-            // review.LoadBundle below is cheap and side-effect-free, not a real duplication cost.
-            var preParse = reader.Read(bundle);
-            if (preParse.Institution is null)
-            {
-                allSucceeded = false;
-                steps.Add(new BootstrapStepResult(step, BootstrapStepStatus.Failed,
-                    preParse.Issues.Select(issue => $"{issue.Code}: {issue.Target} - {issue.Message}").ToArray()));
-                continue;
-            }
-
-            var parent = BuildParentIdentity(chain, preParse.Institution.Requirements);
-            var providers = InstitutionDeploymentRequestConsumer.BuildProviders(message.RootCredentials);
-            var resolver = InstitutionDeploymentRequestConsumer.BuildResolver(parent, message.RootCredentials);
+            var (bundle, institution, _) = parsed[i];
+            var parent = BuildParentIdentity(chain.GetRange(0, i), institution!.Requirements);
+            var providers = InstitutionDeploymentRequestConsumer.BuildProviders(credentials);
+            var resolver = InstitutionDeploymentRequestConsumer.BuildResolver(parent, credentials);
             try
             {
                 var planner = new ProvisioningPlanner(providers);
@@ -88,14 +161,9 @@ public sealed class InstitutionBootstrapRequestConsumer(
                 review.LoadBundle(bundle);
 
                 var outcome = await InstitutionDeploymentRequestConsumer.DeployOneAsync(review, parent, ct);
-                steps.Add(new BootstrapStepResult(step,
+                steps.Add(new BootstrapStepResult(Slots[i].Step,
                     outcome.Succeeded ? BootstrapStepStatus.Succeeded : BootstrapStepStatus.Failed, outcome.Issues));
-
-                if (outcome.Succeeded)
-                    chain.Add(new DeployedLevel(preParse.Institution.Source.Definition.Provenance,
-                        preParse.Institution.Requirements, preParse.Institution.Bindings));
-                else
-                    allSucceeded = false;
+                if (!outcome.Succeeded) allSucceeded = false;
             }
             finally
             {
@@ -104,13 +172,18 @@ public sealed class InstitutionBootstrapRequestConsumer(
             }
         }
 
-        var completed = new InstitutionBootstrapCompleted(message.RequestId, allSucceeded, steps.ToImmutable(), DateTimeOffset.UtcNow);
+        return (allSucceeded, steps.MoveToImmutable());
+    }
+
+    private async Task PublishCompletionAsync(InstitutionBootstrapRequested message, IPostContext context,
+        bool succeeded, ImmutableArray<BootstrapStepResult> steps, CancellationToken ct)
+    {
+        var completed = new InstitutionBootstrapCompleted(message.RequestId, succeeded, steps, DateTimeOffset.UtcNow);
         var initiator = context.Envelope.Metadata;
         var envelope = new PostEnvelope<InstitutionBootstrapCompleted>(
             ProvisioningBootstrapPost.ResultReference(),
             completed,
             BootstrapPostMetadata.CreateCompletion(initiator, completedAtUtc: completed.CompletedAtUtc));
-
         await postProvider.PublishAsync(envelope, ct);
     }
 
