@@ -9,5 +9,6 @@
     <PackageReference Include="StackExchange.Redis" Version="2.8.24" />
     <PackageReference Include="Npgsql" Version="10.0.0" />
     <PackageReference Include="MongoDB.Driver" Version="3.11.2" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.100.3" />
   </ItemGroup>
 </Project>

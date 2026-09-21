@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -31,7 +32,49 @@ public sealed class InstitutionDeploymentWorkerTests
     private static InstitutionDeploymentRequestConsumer BuildConsumer(IPostProvider postProvider, IDefinitionSource source, string tempDirectory) =>
         new(postProvider, source, new InstitutionYamlReader(),
             new FileRunStateStore(Path.Combine(tempDirectory, "run-state")),
-            new EncryptedFileSecretStore(Path.Combine(tempDirectory, "secrets"), RandomNumberGenerator.GetBytes(32)));
+            new EncryptedFileSecretStore(Path.Combine(tempDirectory, "secrets"), RandomNumberGenerator.GetBytes(32)),
+            "test-worker");
+
+    // Proves the actual gap this closes: a "redis" RootCredentialPayload now yields a working
+    // Workbench provider through BuildProviders' exact per-message construction path (not just
+    // WorkbenchProvider/RedisWorkbenchBackend in isolation, which WorkbenchTests.cs already
+    // covers) - EnsureAsync against a real Redis succeeds, and disposing the returned provider
+    // actually closes its connection rather than leaking it.
+    [RootIntegrationFact]
+    public async Task BuildProviders_redis_credential_yields_a_working_workbench_provider()
+    {
+        var credentials = new Dictionary<string, RootCredentialPayload>
+        {
+            ["redis"] = new("127.0.0.1", 16379, null, "integration-secret"),
+        };
+        var providers = InstitutionDeploymentRequestConsumer.BuildProviders(credentials, "test-worker");
+        var workbench = Assert.Single(providers, p => p.Key == "workbench");
+
+        var resource = new ResourceRequirement("workspace", "Workspace", "staging", "owned");
+        var binding = new ResourceBinding("workbench", new Dictionary<string, string>
+        {
+            ["backing"] = "redis", ["target"] = "test-worker", ["stage"] = "test-buildproviders", ["fallback"] = "none",
+        }.ToImmutableDictionary(), ImmutableDictionary<string, SecretReference>.Empty);
+        Assert.Empty(workbench.Validate(resource, binding));
+
+        var context = new ProviderContext("plan", "integration", Guid.NewGuid().ToString("N"), resource, binding, new UnusedSecrets());
+        try
+        {
+            Assert.False((await workbench.EnsureAsync(context, default)).AlreadyExists);
+        }
+        finally
+        {
+            (workbench as IDisposable)?.Dispose();
+            using var redis = await StackExchange.Redis.ConnectionMultiplexer.ConnectAsync("127.0.0.1:16379,password=integration-secret");
+            await redis.GetDatabase().KeyDeleteAsync(Aetheric.Provisioning.Workbench.Redis.RedisWorkbenchBackend.RegistrationKey("test-buildproviders"));
+        }
+    }
+
+    private sealed class UnusedSecrets : ISecretStore
+    {
+        public Task<SecretReference> GetOrCreateAsync(string scope, string name, CancellationToken ct) => throw new InvalidOperationException();
+        public Task<string> ReadAsync(SecretReference reference, CancellationToken ct) => throw new InvalidOperationException();
+    }
 
     [RabbitMqFact]
     public async Task Worker_consumer_reports_provider_unsupported_when_no_credentials_are_supplied()

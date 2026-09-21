@@ -42,7 +42,8 @@ public sealed class InstitutionBootstrapRequestConsumer(
     IPostProvider postProvider,
     InstitutionYamlReader reader,
     IRunStateStore runStateStore,
-    ISecretStore secretStore)
+    ISecretStore secretStore,
+    string workbenchTarget)
     : MessageConsumerBase<InstitutionBootstrapRequested>
 {
     private static readonly (string Step, string Id)[] Slots =
@@ -66,7 +67,7 @@ public sealed class InstitutionBootstrapRequestConsumer(
             parsed[i] = (bundle, result.Institution, result.Issues);
         }
 
-        var (chain, preflight, preflightPassed) = Preflight(parsed, message.RootCredentials);
+        var (chain, preflight, preflightPassed) = Preflight(parsed, message.RootCredentials, workbenchTarget);
         if (!preflightPassed)
         {
             await PublishCompletionAsync(message, context, false, preflight, ct);
@@ -90,7 +91,8 @@ public sealed class InstitutionBootstrapRequestConsumer(
     /// </summary>
     private static (List<DeployedLevel> Chain, ImmutableArray<BootstrapStepResult> Results, bool Passed) Preflight(
         (SourceBundle Bundle, LoadedInstitution? Institution, ImmutableArray<ValidationIssue> Issues)[] parsed,
-        IReadOnlyDictionary<string, RootCredentialPayload> credentials)
+        IReadOnlyDictionary<string, RootCredentialPayload> credentials,
+        string workbenchTarget)
     {
         var chain = new List<DeployedLevel>();
         var results = ImmutableArray.CreateBuilder<BootstrapStepResult>(Slots.Length);
@@ -108,7 +110,7 @@ public sealed class InstitutionBootstrapRequestConsumer(
             }
 
             var parent = BuildParentIdentity(chain, institution.Requirements);
-            var providers = InstitutionDeploymentRequestConsumer.BuildProviders(credentials);
+            var providers = InstitutionDeploymentRequestConsumer.BuildProviders(credentials, workbenchTarget);
             try
             {
                 var parentContext = InstitutionDeploymentRequestConsumer.ResolveParentContext(institution, parent);
@@ -151,7 +153,7 @@ public sealed class InstitutionBootstrapRequestConsumer(
 
             var (bundle, institution, _) = parsed[i];
             var parent = BuildParentIdentity(chain.GetRange(0, i), institution!.Requirements);
-            var providers = InstitutionDeploymentRequestConsumer.BuildProviders(credentials);
+            var providers = InstitutionDeploymentRequestConsumer.BuildProviders(credentials, workbenchTarget);
             var resolver = InstitutionDeploymentRequestConsumer.BuildResolver(parent, credentials);
             try
             {

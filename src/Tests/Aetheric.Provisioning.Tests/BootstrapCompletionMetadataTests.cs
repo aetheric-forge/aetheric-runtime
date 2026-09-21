@@ -34,7 +34,7 @@ public sealed class BootstrapCompletionMetadataTests
         var metadata = ReadMetadata(fixture["Metadata"]!);
         var post = new RecordingPost();
         var consumer = new InstitutionBootstrapRequestConsumer(post, new InstitutionYamlReader(),
-            new UnusedState(), new UnusedSecrets());
+            new UnusedState(), new UnusedSecrets(), "test-worker");
         await consumer.ConsumeAsync(request, new Context(new PostEnvelope<InstitutionBootstrapRequested>(
             ProvisioningBootstrapPost.RequestReference(), request, metadata)));
 

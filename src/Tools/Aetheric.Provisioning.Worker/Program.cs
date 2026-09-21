@@ -24,14 +24,19 @@ var secretKey = await ResolveSecretKeyAsync(secretsDirectory, secretsKeyDirector
 
 var runStateStore = new FileRunStateStore(Path.Combine(dataDirectory, "run-state"));
 var secretStore = new EncryptedFileSecretStore(secretsDirectory, secretKey);
+// A fixed, Worker-wide identity - WorkbenchProvider requires the binding's own "target" setting
+// to match whatever the constructing host supplies, matching AddForgeCampus's own single-host
+// convention. Anything deploying an owned Workbench resource through this Worker (e.g. Campus,
+// Decisions) must set target to this same value in its bindings.
+var workbenchTarget = builder.Configuration["Provisioning:WorkbenchTarget"] ?? "aetheric-provisioning-worker";
 
 builder.Services.AddPostSubscription(
     ProvisioningPost.RequestReference(),
-    new InstitutionDeploymentRequestConsumer(postProvider, definitionSource, reader, runStateStore, secretStore));
+    new InstitutionDeploymentRequestConsumer(postProvider, definitionSource, reader, runStateStore, secretStore, workbenchTarget));
 
 builder.Services.AddPostSubscription(
     ProvisioningBootstrapPost.RequestReference(),
-    new InstitutionBootstrapRequestConsumer(postProvider, reader, runStateStore, secretStore));
+    new InstitutionBootstrapRequestConsumer(postProvider, reader, runStateStore, secretStore, workbenchTarget));
 
 var host = builder.Build();
 await host.RunAsync();
