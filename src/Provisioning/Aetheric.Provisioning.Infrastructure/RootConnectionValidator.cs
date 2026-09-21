@@ -7,6 +7,8 @@ using System.Text;
 using System.Text.Json;
 using Aetheric.Provisioning.Application;
 using Aetheric.Provisioning.Engine;
+using Amazon.S3;
+using Amazon.S3.Model;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Npgsql;
@@ -47,6 +49,8 @@ public sealed class RootConnectionValidator(ILogger<RootConnectionValidator>? lo
                 "rabbitmq" => await RabbitAsync(credential, deadline.Token),
                 "postgres" => await PostgresAsync(credential, deadline.Token),
                 "mongo" => await MongoAsync(credential, deadline.Token),
+                "keycloak" => await KeycloakAsync(credential, deadline.Token),
+                "s3" => await S3Async(credential, deadline.Token),
                 _ => new(false, "invalid")
             };
         }
@@ -68,6 +72,11 @@ public sealed class RootConnectionValidator(ILogger<RootConnectionValidator>? lo
         catch (PostgresException ex) { return new(false, ex.SqlState.StartsWith("28", StringComparison.Ordinal) ? "authentication" : "database"); }
         catch (MongoAuthenticationException) { return new(false, "authentication"); }
         catch (MongoCommandException ex) { return new(false, ex.Code == 13 ? "permission" : ex.Code == 18 ? "authentication" : "database"); }
+        catch (AmazonS3Exception ex)
+        {
+            return new(false, ex.ErrorCode is "InvalidAccessKeyId" or "SignatureDoesNotMatch" ? "authentication"
+                : ex.StatusCode == HttpStatusCode.Forbidden ? "permission" : "unreachable");
+        }
         catch (Exception) { return new(false, "unreachable"); }
     }
 
@@ -152,5 +161,48 @@ public sealed class RootConnectionValidator(ILogger<RootConnectionValidator>? lo
         var authenticated = auth["authenticatedUsers"].AsBsonArray.Any(x => x["user"].AsString == credential.Username && x["db"].AsString == options.AuthDatabase);
         var root = auth["authenticatedUserRoles"].AsBsonArray.Any(x => x["role"].AsString == "root" && x["db"].AsString == "admin");
         return !authenticated ? new(false, "authentication") : root ? ConnectionCheck.Verified : new(false, "permission");
+    }
+
+    // Mirrors KeycloakResourceProvider's own AuthenticateAsync: a resource-owner password grant
+    // against the built-in admin-cli client, the same way kcadm.sh itself bootstraps.
+    private async Task<ConnectionCheck> KeycloakAsync(RootCredential credential, CancellationToken ct)
+    {
+        var options = credential.Keycloak!;
+        var origin = new UriBuilder(options.Scheme, credential.Host, credential.Port, options.BasePath).Uri;
+        using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { BaseAddress = origin };
+        using var form = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "password", ["client_id"] = options.ClientId,
+            ["username"] = credential.Username!, ["password"] = credential.Password,
+        });
+        using var tokenResponse = await http.PostAsync(
+            $"realms/{Uri.EscapeDataString(options.Realm)}/protocol/openid-connect/token", form, ct);
+        if (tokenResponse.StatusCode == HttpStatusCode.Unauthorized || tokenResponse.StatusCode == HttpStatusCode.BadRequest)
+            return new(false, "authentication");
+        if (!tokenResponse.IsSuccessStatusCode) return new(false, "management_api");
+        using var tokenDocument = await JsonDocument.ParseAsync(await tokenResponse.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+        if (!tokenDocument.RootElement.TryGetProperty("access_token", out var accessToken)
+            || accessToken.ValueKind != JsonValueKind.String) return new(false, "management_api");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "admin/realms");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.GetString());
+        using var realmsResponse = await http.SendAsync(request, ct);
+        if (realmsResponse.StatusCode == HttpStatusCode.Forbidden) return new(false, "permission");
+        return realmsResponse.IsSuccessStatusCode ? ConnectionCheck.Verified : new(false, "management_api");
+    }
+
+    // v1 accepts the same lower-isolation tradeoff Aetheric.Provisioning.S3 itself already
+    // documents: one root access key, no per-institution scoping. Listing buckets is enough to
+    // prove both connectivity and that the key authenticates.
+    private static async Task<ConnectionCheck> S3Async(RootCredential credential, CancellationToken ct)
+    {
+        var options = credential.S3!;
+        using var client = new AmazonS3Client(credential.Username, credential.Password, new AmazonS3Config
+        {
+            ServiceURL = new UriBuilder(options.Scheme, credential.Host, credential.Port).Uri.ToString(),
+            ForcePathStyle = options.ForcePathStyle,
+            AuthenticationRegion = options.Region,
+        });
+        await client.ListBucketsAsync(new ListBucketsRequest(), ct);
+        return ConnectionCheck.Verified;
     }
 }
