@@ -5,11 +5,14 @@ using Aetheric.Provisioning.Keycloak;
 using Aetheric.Provisioning.MongoDb;
 using Aetheric.Provisioning.RabbitMq;
 using Aetheric.Provisioning.S3;
+using Aetheric.Provisioning.Workbench;
+using Aetheric.Provisioning.Workbench.Redis;
 using AethericForge.Runtime.Abstractions.Interfaces.Post;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Consumers;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Primitives;
 using AethericForge.Runtime.Abstractions.Interfaces.Post.Providers;
 using AethericForge.Runtime.Models.Post;
+using StackExchange.Redis;
 
 namespace Aetheric.Provisioning.Worker;
 
@@ -40,14 +43,14 @@ public readonly record struct DeploymentOutcome(bool Succeeded, string[] Issues)
 /// live infrastructure access of its own when the deploying institution has a real parent
 /// (message.Parent is non-null).
 ///
-/// All four message-driven resources now have real providers ("rabbitmq", "mongodb", "keycloak",
-/// "s3") - Stage 6's per-message credential flow is complete. Workbench is deliberately not
-/// built here even though it also has a real provider (Aetheric.Provisioning.Workbench.Redis):
-/// its backend takes a host-injected IDatabase (RedisWorkbenchBackend(IDatabase database)), not a
-/// per-request credential, so it stays outside BuildProviders - a plan against the *whole* campus
-/// (all five resources, including Workbench) still reports provider.unsupported for Workbench
-/// specifically when driven through this Worker. That's a structural difference from the other
-/// four, not a remaining Stage 6 gap.
+/// All five message-driven resources now have real providers ("rabbitmq", "mongodb", "keycloak",
+/// "s3", "redis"/Workbench). Workbench needed one more piece than the other four:
+/// WorkbenchProvider(string target, IWorkbenchBackend) takes a *fixed* target identity, designed
+/// for a single long-lived host (e.g. aetheric-admin/aetheric-web's own AddForgeCampus wiring),
+/// not per-message construction the way the other four providers work. This Worker supplies its
+/// own fixed target (workbenchTarget, constructor-injected from configuration) so a plan against
+/// the whole campus (all five resources, including Workbench) can actually succeed when driven
+/// through this Worker, as long as the deploying bindings' own "target" setting matches.
 ///
 /// Takes the review pipeline's stateless pieces via constructor injection - not built
 /// per-message - so a test can substitute a fake IDefinitionSource instead of requiring live
@@ -64,14 +67,15 @@ public sealed class InstitutionDeploymentRequestConsumer(
     IDefinitionSource source,
     InstitutionYamlReader reader,
     IRunStateStore runStateStore,
-    ISecretStore secretStore)
+    ISecretStore secretStore,
+    string workbenchTarget)
     : MessageConsumerBase<InstitutionDeploymentRequested>
 {
     public override IPostContract Contract => ProvisioningPost.RequestReference().Contract;
 
     public override async Task ConsumeAsync(InstitutionDeploymentRequested message, IPostContext context, CancellationToken ct = default)
     {
-        var providers = BuildProviders(message.RootCredentials);
+        var providers = BuildProviders(message.RootCredentials, workbenchTarget);
         var resolver = BuildResolver(message.Parent, message.RootCredentials);
         try
         {
@@ -160,7 +164,7 @@ public sealed class InstitutionDeploymentRequestConsumer(
         return new DeploymentOutcome(succeeded, issues);
     }
 
-    internal static IReadOnlyList<IResourceProvider> BuildProviders(IReadOnlyDictionary<string, RootCredentialPayload> credentials)
+    internal static IReadOnlyList<IResourceProvider> BuildProviders(IReadOnlyDictionary<string, RootCredentialPayload> credentials, string workbenchTarget)
     {
         var providers = new List<IResourceProvider>();
         if (credentials.TryGetValue("rabbitmq", out var rabbitMq))
@@ -191,7 +195,34 @@ public sealed class InstitutionDeploymentRequestConsumer(
                 S3 = new S3RootOptions(s3.Scheme ?? "https")
             }));
         }
+        if (credentials.TryGetValue("redis", out var redis))
+        {
+            // Opened fresh per message, matching the other four - RedisWorkbenchBackend itself
+            // takes a host-injected IDatabase and never owns/disposes the connection behind it
+            // (that's correct for AddForgeCampus's single long-lived connection), so this Worker
+            // owns and disposes the multiplexer itself via the IDisposable wrapper below.
+            var options = new ConfigurationOptions { User = redis.Username, Password = redis.Password, AbortOnConnectFail = true };
+            options.EndPoints.Add(redis.Host, redis.Port);
+            var connection = ConnectionMultiplexer.Connect(options);
+            var backend = new RedisWorkbenchBackend(connection.GetDatabase());
+            providers.Add(new DisposableWorkbenchProvider(new WorkbenchProvider(workbenchTarget, backend), connection));
+        }
         return providers;
+    }
+
+    // WorkbenchProvider itself never owns a connection (by design - see the class doc comment
+    // above), so this Worker-only wrapper is what lets the existing
+    // "foreach (provider as IDisposable)?.Dispose()" cleanup in ConsumeAsync/ExecuteAsync also
+    // close the per-message Redis connection built above, without changing WorkbenchProvider's
+    // own shape for its other (host-injected, long-lived-connection) callers.
+    private sealed class DisposableWorkbenchProvider(WorkbenchProvider inner, IConnectionMultiplexer connection) : IResourceProvider, IDisposable
+    {
+        public string Key => inner.Key;
+        public System.Collections.Immutable.ImmutableArray<ValidationIssue> Validate(ResourceRequirement resource, ResourceBinding binding) =>
+            inner.Validate(resource, binding);
+        public Task<ProviderResult> EnsureAsync(ProviderContext context, CancellationToken cancellationToken) =>
+            inner.EnsureAsync(context, cancellationToken);
+        public void Dispose() => connection.Dispose();
     }
 
     // parent is only non-null for a non-root institution (e.g. Campus). Builds one sub-resolver
