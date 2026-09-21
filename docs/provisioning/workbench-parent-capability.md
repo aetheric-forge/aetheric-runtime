@@ -10,7 +10,7 @@ The single-institution `institution-deployment-requested` v2 worker now verifies
 
 These identify the **resource-owning ancestor**, which may differ from the immediate parent represented by `Parent.Repository` and `Parent.Revision`. The deployment bindings still declare a logical parent source such as `IWorkbench: { source: owner.workbench }`. The resolver checks that the requested source matches `ParentContext.Capabilities`.
 
-Credentials use `redis` with Host, Port, optional Username, Password, Scheme (`redis` or `rediss`, default `redis`), and Database (nonnegative Redis database index encoded as a string, default `0`). Connections are lazy and request-scoped; pure preflight performs no Redis I/O. The server ACL must allow reading the registration through the read-only Lua script (`PTTL`, `GET`, and script invocation). TLS uses the configured endpoint hostname and normal certificate verification.
+Credentials use `redis` with Host, Port, optional Username, Password, Scheme (`redis` or `rediss`, default `redis`), and Database (nonnegative Redis database index encoded as a string, default `0`). Connections are lazy and request-scoped; constructing this resolver performs no Redis I/O. Provider construction in the worker is a separate path. The server ACL must allow reading the registration through the read-only Lua script (`PTTL`, `GET`, and script invocation). TLS uses the configured endpoint hostname and normal certificate verification.
 
 The check atomically reads a nonexpiring registration at `RedisWorkbenchBackend.RegistrationKey(Stage)` and verifies Version=1, Format=`runtime-staging-hash-v1`, Environment, Institution, Resource and Stage. Missing, malformed, expiring or mismatched registrations are unavailable. The resolver never creates/adopts a stage or writes/deletes draft keys. It verifies provisioning ownership, not the application user's read/write permissions; those still require host readiness checks after mounting.
 
@@ -20,6 +20,6 @@ Missing/invalid location or credential configuration yields a failed parent chec
 
 `ILibrary` retains its existing semantics: ResourceLocations contains the owning institution ID, and Mongo verifies its `{id}-library` scoped user in `admin`. It does not take `database@id` (the old message comment was stale), nor does it prove the mounted app's access to a specific database. Root Mongo credentials remain necessary for this existing check.
 
-This change covers verification of an existing owner for single-institution deployment. It does not register Redis as an owned-resource provider in the worker, infer Workbench locations for a newly created bootstrap hierarchy, or mount a package.
+This change covers verification of an existing owner for single-institution deployment. Owned Redis provisioning is supplied separately by runtime PR #36. This change does not infer Workbench locations for a newly created bootstrap hierarchy or mount a package.
 
 Validation: 25 focused tests passed without skips, covering `WorkbenchParentCapabilityTests`, `WorkbenchTests`, `MongoDbLibraryParentCapabilityResolverTests`, and `CompositeParentCapabilityResolverTests`. Live tests used isolated Redis (database 2) and MongoDB fixtures. The companion ADR Campus suite passed all 248 tests.
