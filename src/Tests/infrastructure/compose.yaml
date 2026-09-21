@@ -20,3 +20,17 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: integration-secret
     ports: ["127.0.0.1:17017:27017"]
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.0
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: root
+      KC_BOOTSTRAP_ADMIN_PASSWORD: integration-secret
+    ports: ["127.0.0.1:18080:8080"]
+  s3:
+    image: quay.io/minio/minio:latest
+    command: [server, /data]
+    environment:
+      MINIO_ROOT_USER: root
+      MINIO_ROOT_PASSWORD: integration-secret
+    ports: ["127.0.0.1:19000:9000"]

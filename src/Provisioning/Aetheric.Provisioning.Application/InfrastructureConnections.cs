@@ -5,7 +5,8 @@ namespace Aetheric.Provisioning.Application;
 
 public static class InfrastructureConnections
 {
-    public static ImmutableArray<string> Systems { get; } = ["redis", "rabbitmq", "postgres", "mongo"];
+    public static ImmutableArray<string> Systems { get; } =
+        ["redis", "rabbitmq", "postgres", "mongo", "keycloak", "s3"];
     public static RootCredential Normalize(string system, RootCredential value)
     {
         if (!Systems.Contains(system) || string.IsNullOrWhiteSpace(value.Host) || value.Host.Length > 253
@@ -13,7 +14,8 @@ public static class InfrastructureConnections
             || value.Port is < 1 or > 65535 || string.IsNullOrWhiteSpace(value.Password) || value.Password.Length > 4096
             || value.Username?.Length > 200 || (system != "redis" && string.IsNullOrWhiteSpace(value.Username))
             || (system != "mongo" && value.Mongo is not null) || (system != "postgres" && value.Postgres is not null)
-            || (system != "rabbitmq" && value.RabbitMq is not null))
+            || (system != "rabbitmq" && value.RabbitMq is not null) || (system != "keycloak" && value.Keycloak is not null)
+            || (system != "s3" && value.S3 is not null))
             throw new ArgumentException("Check the host, port, username, password, and service options.");
         if (system == "mongo")
         {
@@ -36,6 +38,25 @@ public static class InfrastructureConnections
                 || options.BasePath.Split('/').Any(x => Uri.UnescapeDataString(x) is "." or ".."))
                 throw new ArgumentException("Enter a management API base URL without credentials, query, or fragment.");
             return value with { RabbitMq = options with { BasePath = options.BasePath.TrimEnd('/') + "/" } };
+        }
+        if (system == "keycloak")
+        {
+            var options = value.Keycloak ?? new();
+            if (options.Scheme is not ("http" or "https") || options.BasePath.Length > 500
+                || !options.BasePath.StartsWith('/') || options.BasePath.Contains('\\')
+                || options.BasePath.IndexOfAny(['?', '#']) >= 0
+                || options.BasePath.Split('/').Any(x => Uri.UnescapeDataString(x) is "." or "..")
+                || string.IsNullOrWhiteSpace(options.Realm) || options.Realm.Length > 36
+                || string.IsNullOrWhiteSpace(options.ClientId) || options.ClientId.Length > 200)
+                throw new ArgumentException("Enter an authority base URL without credentials, query, or fragment, plus a token realm and client ID.");
+            return value with { Keycloak = options with { BasePath = options.BasePath.TrimEnd('/') + "/" } };
+        }
+        if (system == "s3")
+        {
+            var options = value.S3 ?? new();
+            if (options.Scheme is not ("http" or "https") || options.Region?.Length > 100)
+                throw new ArgumentException("Check the service scheme and region.");
+            return value with { S3 = options };
         }
         return value with { Username = string.IsNullOrWhiteSpace(value.Username) ? null : value.Username };
     }
