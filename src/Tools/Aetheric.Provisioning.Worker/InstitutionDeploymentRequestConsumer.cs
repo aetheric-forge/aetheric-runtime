@@ -266,6 +266,23 @@ public sealed class InstitutionDeploymentRequestConsumer(
             }, owningInstitutionId));
         }
 
+        if (p.ResourceLocations.TryGetValue("IWorkbench", out var workspace)
+            && credentials.TryGetValue("redis", out var redis)
+            && WorkbenchParentLocation.TryParse(workspace, out var location)
+            && redis.Scheme is null or "redis" or "rediss"
+            && !string.IsNullOrWhiteSpace(redis.Host) && redis.Port is > 0 and <= 65535
+            && int.TryParse(redis.Database ?? "0", out var database) && database >= 0)
+        {
+            var options = new ConfigurationOptions
+            {
+                User = redis.Username, Password = redis.Password, Ssl = redis.Scheme == "rediss",
+                DefaultDatabase = database, AbortOnConnectFail = true, ConnectRetry = 0,
+                ConnectTimeout = 3000, AsyncTimeout = 3000
+            };
+            options.EndPoints.Add(redis.Host, redis.Port);
+            resolvers.Add(new RedisWorkbenchParentCapabilityResolver(options, location!));
+        }
+
         return resolvers.Count == 0 ? new NoParentCapabilityResolver() : new CompositeParentCapabilityResolver(resolvers);
     }
 }

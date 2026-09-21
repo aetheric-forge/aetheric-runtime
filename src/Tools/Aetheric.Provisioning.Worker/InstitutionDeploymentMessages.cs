@@ -45,13 +45,12 @@ public sealed record RootCredentialPayload(
 /// ResourceLocations carries whatever each declared contract's own live-verifying resolver needs
 /// to perform its check - keyed by contract name ("IRegistrar"/"IArchive"/"IPostOffice" -> the
 /// realm/bucket/vhost that actually owns it), the deploying operator already knows these, since
-/// they triggered that ancestor's own deployment first. "ILibrary" is the one exception: Mongo
-/// creates databases lazily on write and this provisioner never writes data, so "does the
-/// database exist" isn't a reliable signal - the live check instead verifies the scoped user the
-/// owning level's own MongoDbResourceProvider actually created, which needs BOTH the database
-/// name and which institution owns it. Encoded as a single "{database}@{owningInstitutionId}"
-/// string rather than a second parallel dictionary just for one contract's extra field - neither
-/// a Mongo database name nor an institution id slug can contain "@".
+/// they triggered that ancestor's own deployment first. ILibrary is the owning institution's
+/// ID: the resolver checks its "{id}-library" Mongo scoped user in admin (not database@id).
+/// IWorkbench is versioned JSON: Version=1, Environment, Institution, Resource, Stage. These
+/// must match the existing persistent Redis workspace registration. Missing/unregistered stages
+/// are unavailable; deployment never adopts legacy data. Redis credentials use key "redis",
+/// Scheme redis/rediss (default redis), and Database as a nonnegative index (default 0).
 /// </summary>
 public sealed record ParentIdentity(string Repository, string Revision, IReadOnlyDictionary<string, string> ResourceLocations);
 
