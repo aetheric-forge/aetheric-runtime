@@ -30,3 +30,12 @@ public sealed class RootIntegrationTheoryAttribute : TheoryAttribute
             Skip = "Start src/Tests/infrastructure/compose.yaml and set ROOT_CREDENTIAL_INTEGRATION=1.";
     }
 }
+
+public sealed class RootIntegrationFactAttribute : FactAttribute
+{
+    public RootIntegrationFactAttribute()
+    {
+        if (Environment.GetEnvironmentVariable("ROOT_CREDENTIAL_INTEGRATION") != "1")
+            Skip = "Start src/Tests/infrastructure/compose.yaml and set ROOT_CREDENTIAL_INTEGRATION=1.";
+    }
+}

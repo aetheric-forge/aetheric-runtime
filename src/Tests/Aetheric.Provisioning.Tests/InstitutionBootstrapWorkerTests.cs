@@ -149,7 +149,8 @@ public sealed class InstitutionBootstrapWorkerTests
             Environment.GetEnvironmentVariable("PROVISIONING_TEST_RABBITMQ")!),
         new InstitutionYamlReader(),
         new FileRunStateStore(Path.Combine(tempDirectory, "run-state")),
-        new EncryptedFileSecretStore(Path.Combine(tempDirectory, "secrets"), RandomNumberGenerator.GetBytes(32)));
+        new EncryptedFileSecretStore(Path.Combine(tempDirectory, "secrets"), RandomNumberGenerator.GetBytes(32)),
+        "test-worker");
 
     [AllStage6ProvidersFact]
     public async Task Worker_consumer_bootstraps_the_whole_hierarchy_when_everything_inherits_from_university()
