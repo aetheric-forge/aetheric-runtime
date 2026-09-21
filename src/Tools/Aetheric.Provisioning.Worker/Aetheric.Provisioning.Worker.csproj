@@ -24,4 +24,5 @@
     <ProjectReference Include="../../Institutions/AethericForge.Runtime.Institutions.Campus/AethericForge.Runtime.Institutions.Campus.csproj" />
     <ProjectReference Include="../../Providers/AethericForge.Runtime.Providers.Post.RabbitMq/AethericForge.Runtime.Providers.Post.RabbitMq.csproj" />
   </ItemGroup>
+  <ItemGroup><ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Workbench.Redis/Aetheric.Provisioning.Workbench.Redis.csproj" /></ItemGroup>
 </Project>
