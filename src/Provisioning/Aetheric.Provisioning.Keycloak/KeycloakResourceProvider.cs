@@ -19,7 +19,7 @@ namespace Aetheric.Provisioning.Keycloak;
 /// </summary>
 public sealed class KeycloakResourceProvider : IResourceProvider, IDisposable
 {
-    private static readonly Regex RealmPattern = new(@"\A[a-zA-Z0-9_-]{1,36}\z", RegexOptions.Compiled);
+    private static readonly Regex RealmPattern = new(@"\A[a-zA-Z0-9_.-]{1,36}\z", RegexOptions.Compiled);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly string[] RealmManagementRoles = ["manage-users", "view-users"];
 
@@ -53,7 +53,7 @@ public sealed class KeycloakResourceProvider : IResourceProvider, IDisposable
             && binding.Settings.Keys.All(k => k is "realm")
             && binding.Secrets.IsEmpty;
         return valid ? [] : [new("keycloak.binding", resource.Id,
-            "Keycloak requires an owned resource with only a realm setting (1-36 characters: letters, digits, '_', '-'). Credentials are supplied by the host.")];
+            "Keycloak requires an owned resource with only a realm setting (1-36 characters: letters, digits, '.', '_', '-'). Credentials are supplied by the host.")];
     }
 
     public async Task<ProviderResult> EnsureAsync(ProviderContext context, CancellationToken cancellationToken)

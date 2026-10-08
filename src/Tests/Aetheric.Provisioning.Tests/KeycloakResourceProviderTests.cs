@@ -20,9 +20,27 @@ public sealed class KeycloakResourceProviderTests
     private static RootCredential DummyCredential => new("localhost", 8080, "unused", "unused");
 
     [Theory]
+    [InlineData("int.aethericforge.ca")]
+    [InlineData("aetheric-forge-initiative")]
+    [InlineData("test-realm-")]
+    [InlineData("Mixed_Case.example-1")]
+    [InlineData("123456789012345678901234567890123456")]
+    public void Valid_realm_bindings_are_accepted(string realm)
+    {
+        using var provider = new KeycloakResourceProvider(DummyCredential);
+        Assert.Empty(provider.Validate(Resource, Binding with { Settings = Binding.Settings.SetItem("realm", realm) }));
+    }
+
+    [Theory]
     [InlineData("realm", "")]
     [InlineData("realm", "has a space")]
     [InlineData("realm", "semicolon;here")]
+    [InlineData("realm", "realm/path")]
+    [InlineData("realm", "realm?query")]
+    [InlineData("realm", "realm#fragment")]
+    [InlineData("realm", "realm%2Fpath")]
+    [InlineData("realm", "realm\n")]
+    [InlineData("realm", "1234567890123456789012345678901234567")]
     [InlineData("extra", "value")]
     public void Invalid_bindings_are_rejected(string key, string value)
     {
