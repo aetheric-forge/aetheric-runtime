@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
 using System.Net;
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using Aetheric.Provisioning.Engine;
 using Aetheric.Provisioning.Worker;
 using Xunit;
@@ -9,6 +11,23 @@ namespace Aetheric.Provisioning.Tests;
 
 public sealed class KubernetesConsumerConfigurationTests
 {
+    [Fact]
+    public async Task Service_account_CA_loads_without_a_private_key()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            using var key = RSA.Create(2048);
+            var request = new CertificateRequest("CN=cluster-ca", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddDays(1));
+            await File.WriteAllTextAsync(Path.Combine(directory, "ca.crt"), certificate.ExportCertificatePem());
+            await File.WriteAllTextAsync(Path.Combine(directory, "token"), "test-token");
+            using var store = await KubernetesConsumerConfigurationStore.FromServiceAccountAsync("aetheric-forge", "parallel-you-consumer", directory);
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
     [Fact]
     public async Task Consumer_secret_update_is_atomic_and_carries_only_the_selected_configuration()
     {
