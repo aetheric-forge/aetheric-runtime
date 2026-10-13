@@ -12,11 +12,12 @@ namespace Aetheric.Provisioning.Worker;
 public sealed class KubernetesConsumerConfigurationStore(HttpClient http, string namespaceName, string secretName,
     X509Certificate2? clusterRoot = null) : IConsumerConfigurationStore, IDisposable
 {
-    public static async Task<KubernetesConsumerConfigurationStore> FromServiceAccountAsync(string namespaceName, string secretName)
+    public static async Task<KubernetesConsumerConfigurationStore> FromServiceAccountAsync(string namespaceName, string secretName,
+        string serviceAccountDirectory = "/var/run/secrets/kubernetes.io/serviceaccount")
     {
-        var token = (await File.ReadAllTextAsync("/var/run/secrets/kubernetes.io/serviceaccount/token")).Trim();
+        var token = (await File.ReadAllTextAsync(Path.Combine(serviceAccountDirectory, "token"))).Trim();
         if (token.Length == 0) throw new InvalidDataException("The worker service account token is missing.");
-        var root = X509Certificate2.CreateFromPemFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt");
+        var root = X509Certificate2.CreateFromPem(await File.ReadAllTextAsync(Path.Combine(serviceAccountDirectory, "ca.crt")));
         var handler = new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback = (_, certificate, chain, errors) =>
