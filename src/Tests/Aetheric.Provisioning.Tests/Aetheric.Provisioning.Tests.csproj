@@ -7,6 +7,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../Providers/AethericForge.Runtime.Providers.Staging.Redis/AethericForge.Runtime.Providers.Staging.Redis.csproj" />
     <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Registry/Aetheric.Provisioning.Registry.csproj" />
     <ProjectReference Include="../../Provisioning/Aetheric.Provisioning.Workbench.Redis/Aetheric.Provisioning.Workbench.Redis.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />

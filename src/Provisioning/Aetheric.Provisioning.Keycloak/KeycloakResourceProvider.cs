@@ -46,6 +46,48 @@ public sealed class KeycloakResourceProvider : IResourceProvider, IDisposable
 
     public string Key => "keycloak";
 
+    /// <summary>Creates a browser-only consumer client without granting realm-management roles.</summary>
+    public async Task EnsureBrowserClientAsync(string realm, string clientId, string owner,
+        string secret, Uri publicOrigin, CancellationToken ct = default)
+    {
+        if (!RealmPattern.IsMatch(realm) || !Regex.IsMatch(clientId, "\\A[a-zA-Z0-9_.-]{1,200}\\z")
+            || !Regex.IsMatch(owner, "\\A[0-9a-f]{64}\\z") || string.IsNullOrWhiteSpace(secret)
+            || !publicOrigin.IsAbsoluteUri || publicOrigin.UserInfo.Length != 0 || publicOrigin.Query.Length != 0
+            || publicOrigin.Fragment.Length != 0 || publicOrigin.AbsolutePath != "/"
+            || (publicOrigin.Scheme != "https" && !(publicOrigin.Scheme == "http" && publicOrigin.IsLoopback)))
+            throw new ArgumentException("An exact public origin and valid consumer identity are required.");
+        await AuthenticateAsync(ct);
+        var existing = await FindClientInternalIdAsync(realm, clientId, ct);
+        if (existing is not null)
+        {
+            using var response = await SendAsync(HttpMethod.Get,
+                $"admin/realms/{Uri.EscapeDataString(realm)}/clients/{Uri.EscapeDataString(existing)}", null, ct);
+            using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            if (!body.RootElement.TryGetProperty("attributes", out var attributes)
+                || !attributes.TryGetProperty("aetheric.provisioning.owner", out var marker)
+                || marker.GetString() != owner)
+                throw new InvalidOperationException("An existing browser client belongs to another deployment.");
+        }
+        var origin = publicOrigin.AbsoluteUri.TrimEnd('/');
+        var representation = new
+        {
+            id = existing, clientId, protocol = "openid-connect", enabled = true, publicClient = false,
+            serviceAccountsEnabled = false, standardFlowEnabled = true,
+            directAccessGrantsEnabled = false, clientAuthenticatorType = "client-secret", secret,
+            redirectUris = new[] { origin + "/signin-oidc" }, webOrigins = new[] { origin },
+            attributes = new Dictionary<string, string>
+            {
+                ["aetheric.provisioning.owner"] = owner,
+                ["pkce.code.challenge.method"] = "S256",
+                ["post.logout.redirect.uris"] = origin + "/signout-callback-oidc"
+            }
+        };
+        var path = $"admin/realms/{Uri.EscapeDataString(realm)}/clients";
+        using var result = await SendAsync(existing is null ? HttpMethod.Post : HttpMethod.Put,
+            existing is null ? path : path + "/" + Uri.EscapeDataString(existing), representation, ct);
+        result.EnsureSuccessStatusCode();
+    }
+
     public ImmutableArray<ValidationIssue> Validate(ResourceRequirement resource, ResourceBinding binding)
     {
         var valid = resource.Ownership == "owned" && binding.Provider == Key
