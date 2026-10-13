@@ -43,7 +43,8 @@ public sealed class InstitutionBootstrapRequestConsumer(
     InstitutionYamlReader reader,
     IRunStateStore runStateStore,
     ISecretStore secretStore,
-    string workbenchTarget)
+    string workbenchTarget,
+    IInstitutionDeploymentStore? deploymentStore = null)
     : MessageConsumerBase<InstitutionBootstrapRequested>
 {
     private static readonly (string Step, string Id)[] Slots =
@@ -74,7 +75,7 @@ public sealed class InstitutionBootstrapRequestConsumer(
             return;
         }
 
-        var executed = await ExecuteAsync(parsed, chain, message.RootCredentials, ct);
+        var executed = await ExecuteAsync(parsed, chain, message.RootCredentials, message.RequestId, message.RequestedAtUtc, ct);
         await PublishCompletionAsync(message, context, executed.Succeeded, executed.Steps, ct);
     }
 
@@ -138,6 +139,7 @@ public sealed class InstitutionBootstrapRequestConsumer(
         (SourceBundle Bundle, LoadedInstitution? Institution, ImmutableArray<ValidationIssue> Issues)[] parsed,
         List<DeployedLevel> chain,
         IReadOnlyDictionary<string, RootCredentialPayload> credentials,
+        Guid requestId, DateTimeOffset requestedAtUtc,
         CancellationToken ct)
     {
         var steps = ImmutableArray.CreateBuilder<BootstrapStepResult>(Slots.Length);
@@ -162,7 +164,15 @@ public sealed class InstitutionBootstrapRequestConsumer(
                 var review = new ProvisioningReview(UnusedDefinitionSource.Instance, reader, planner, engine);
                 review.LoadBundle(bundle);
 
-                var outcome = await InstitutionDeploymentRequestConsumer.DeployOneAsync(review, parent, ct);
+                await using var lease = await InstitutionDeploymentRequestConsumer.AcquireDeploymentAsync(deploymentStore, review.Loaded, ct);
+                var immediateParent = i == 0 ? null : chain[i - 1];
+                var lineage = immediateParent is null ? null : new DeploymentParent(immediateParent.Provenance.Repository,
+                    immediateParent.Provenance.Commit, InstitutionDeploymentAttempt.Identity(immediateParent.Provenance.Repository,
+                        immediateParent.Requirements.Id, immediateParent.Bindings.Environment),
+                    parent?.ResourceLocations.ToImmutableDictionary() ?? ImmutableDictionary<string, string>.Empty);
+
+                var outcome = await InstitutionDeploymentRequestConsumer.DeployOneAsync(review, parent, ct,
+                    deploymentStore, requestId, requestedAtUtc, credentials, lineage);
                 steps.Add(new BootstrapStepResult(Slots[i].Step,
                     outcome.Succeeded ? BootstrapStepStatus.Succeeded : BootstrapStepStatus.Failed, outcome.Issues));
                 if (!outcome.Succeeded) allSucceeded = false;
@@ -217,7 +227,11 @@ public sealed class InstitutionBootstrapRequestConsumer(
         // resolved location, correctly reporting it unavailable rather than crashing - so an
         // empty map here still produces a real (if uniformly-unavailable) parent identity.
         var immediateParent = chain[^1];
-        return new ParentIdentity(immediateParent.Provenance.Repository, immediateParent.Provenance.Commit, locations.ToImmutable());
+        return new ParentIdentity(immediateParent.Provenance.Repository, immediateParent.Provenance.Commit, locations.ToImmutable())
+        {
+            DeploymentId = InstitutionDeploymentAttempt.Identity(immediateParent.Provenance.Repository,
+                immediateParent.Requirements.Id, immediateParent.Bindings.Environment)
+        };
     }
 
     // Walks the chain from nearest ancestor to furthest, returning the first level whose own

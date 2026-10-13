@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aethericforge-parallel-you-consumer
+  namespace: aetheric-forge
+type: Opaque
+data: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aetheric-provisioning-worker
+  namespace: aetheric-forge
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: parallel-you-consumer-writer
+  namespace: aetheric-forge
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["aethericforge-parallel-you-consumer"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: parallel-you-consumer-writer
+  namespace: aetheric-forge
+subjects:
+  - kind: ServiceAccount
+    name: aetheric-provisioning-worker
+    namespace: aetheric-forge
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: parallel-you-consumer-writer

@@ -1,4 +1,5 @@
 using Aetheric.Provisioning.Application;
+using System.Collections.Immutable;
 using Aetheric.Provisioning.Definitions;
 using Aetheric.Provisioning.Engine;
 using Aetheric.Provisioning.Keycloak;
@@ -68,15 +69,26 @@ public sealed class InstitutionDeploymentRequestConsumer(
     InstitutionYamlReader reader,
     IRunStateStore runStateStore,
     ISecretStore secretStore,
-    string workbenchTarget)
+    string workbenchTarget,
+    IInstitutionDeploymentStore? deploymentStore = null,
+    ParallelYouConsumerProvisioner? parallelYouConsumer = null)
     : MessageConsumerBase<InstitutionDeploymentRequested>
 {
     public override IPostContract Contract => ProvisioningPost.RequestReference().Contract;
 
     public override async Task ConsumeAsync(InstitutionDeploymentRequested message, IPostContext context, CancellationToken ct = default)
     {
+        ParentIdentity? parent;
+        try { parent = await ProvisionedParentResolver.ResolveAsync(deploymentStore, message.Parent, ct); }
+        catch (Exception ex) when (ex is InvalidOperationException or InvalidDataException or ArgumentException)
+        {
+            await postProvider.PublishAsync(new PostEnvelope<InstitutionDeploymentCompleted>(ProvisioningPost.ResultReference(),
+                new(message.RequestId, false, ["parent.catalog_unavailable"], DateTimeOffset.UtcNow),
+                new PostMetadata(correlationId: message.RequestId.ToString("D"))), ct);
+            return;
+        }
         var providers = BuildProviders(message.RootCredentials, workbenchTarget);
-        var resolver = BuildResolver(message.Parent, message.RootCredentials);
+        var resolver = BuildResolver(parent, message.RootCredentials);
         try
         {
             var planner = new ProvisioningPlanner(providers);
@@ -87,7 +99,33 @@ public sealed class InstitutionDeploymentRequestConsumer(
                 new DefinitionSourceRequest(message.Repository, message.Revision, message.DefinitionPath, message.BindingsPath),
                 ct);
 
-            var outcome = await DeployOneAsync(review, message.Parent, ct);
+            await using var lease = await AcquireDeploymentAsync(deploymentStore, review.Loaded, ct);
+
+            var outcome = await DeployOneAsync(review, parent, ct, deploymentStore,
+                message.RequestId, message.RequestedAtUtc, message.RootCredentials);
+
+            if (outcome.Succeeded && review.Loaded?.Requirements.Id == "parallel-you" && deploymentStore is not null)
+            {
+                var deploymentId = InstitutionDeploymentAttempt.Identity(review.Loaded.Source.Definition.Provenance.Repository,
+                    review.Loaded.Requirements.Id, review.Bindings!.Environment);
+                var record = (await deploymentStore.ReadAsync(deploymentId, ct))!.Provisioned!;
+                try
+                {
+                    if (parallelYouConsumer is null) throw new ConsumerProvisioningException("consumer.public_origin_required");
+                    var delivery = await parallelYouConsumer.ProvisionAsync(record, message.RootCredentials, ct);
+                    await deploymentStore.SaveAttemptAsync(record with { Consumer = delivery }, ct);
+                }
+                catch (Exception exception) when (!ct.IsCancellationRequested)
+                {
+                    var code = exception is ConsumerProvisioningException consumerError ? consumerError.Code : "consumer.delivery_failed";
+                    await deploymentStore.SaveAttemptAsync(record with
+                    {
+                        Consumer = new ConsumerDelivery(ConsumerDeliveryStatus.Failed, "parallel-you", record.PlanId,
+                            ImmutableDictionary<string, SecretReference>.Empty, [code])
+                    }, CancellationToken.None);
+                    outcome = new DeploymentOutcome(false, [code]);
+                }
+            }
 
             var completed = new InstitutionDeploymentCompleted(message.RequestId, outcome.Succeeded, outcome.Issues, DateTimeOffset.UtcNow);
             var envelope = new PostEnvelope<InstitutionDeploymentCompleted>(
@@ -143,7 +181,9 @@ public sealed class InstitutionDeploymentRequestConsumer(
         return parentContext with { Capabilities = loaded.Bindings.ParentSources };
     }
 
-    internal static async Task<DeploymentOutcome> DeployOneAsync(ProvisioningReview review, ParentIdentity? parent, CancellationToken ct)
+    internal static async Task<DeploymentOutcome> DeployOneAsync(ProvisioningReview review, ParentIdentity? parent, CancellationToken ct,
+        IInstitutionDeploymentStore? deployments = null, Guid requestId = default, DateTimeOffset requestedAtUtc = default,
+        IReadOnlyDictionary<string, RootCredentialPayload>? credentials = null, DeploymentParent? containmentParent = null)
     {
         if (review.Loaded is not null)
             review.Configure(review.Bindings!, ResolveParentContext(review.Loaded, parent));
@@ -156,13 +196,80 @@ public sealed class InstitutionDeploymentRequestConsumer(
         // executed. Auto-approve: this message *is* the operator's approval, there's no separate
         // review step for a machine-to-machine deployment request.
         review.Approve(result.Plan!.Id);
-        var execution = await review.ExecuteApprovedAsync(ct: ct);
+        InstitutionDeploymentAttempt? attempt = null;
+        if (deployments is not null)
+        {
+            var lineage = containmentParent ?? (parent is null ? null : new DeploymentParent(parent.Repository, parent.Revision,
+                parent.DeploymentId, parent.ResourceLocations.ToImmutableDictionary()));
+            attempt = InstitutionDeploymentRecorder.Begin(review.Loaded!, result.Plan, requestId, requestedAtUtc, lineage);
+            if (credentials is not null) attempt = AddConnections(attempt, credentials);
+            var prior = await deployments.ReadAsync(attempt.DeploymentId, ct);
+            if (prior is not null && prior.LatestAttempt.RequestedAtUtc > attempt.RequestedAtUtc)
+                return new DeploymentOutcome(false, ["deployment.superseded"]);
+            if (parent?.DeploymentId is { } parentId)
+            {
+                var parentRevision = (await deployments.ReadAsync(parentId, ct))?.Provisioned;
+                if (parentRevision is null || parentRevision.Environment != attempt.Environment)
+                    return new DeploymentOutcome(false, ["parent.environment_mismatch"]);
+            }
+            if (prior?.LatestAttempt.PlanId == attempt.PlanId && attempt.Resources.Any(pair =>
+                prior.LatestAttempt.Resources.TryGetValue(pair.Key, out var previous) && previous.Connection.Count > 0
+                && !previous.Connection.OrderBy(x => x.Key, StringComparer.Ordinal).SequenceEqual(pair.Value.Connection.OrderBy(x => x.Key, StringComparer.Ordinal))))
+                return new DeploymentOutcome(false, ["deployment.connection_changed"]);
+            await deployments.SaveAttemptAsync(attempt, ct);
+        }
+        ReviewExecutionResult execution;
+        try { execution = await review.ExecuteApprovedAsync(ct: ct); }
+        catch
+        {
+            if (attempt is not null)
+                await deployments!.SaveAttemptAsync(attempt with
+                {
+                    Status = ct.IsCancellationRequested ? InstitutionDeploymentStatus.Cancelled : InstitutionDeploymentStatus.Failed,
+                    CompletedAtUtc = DateTimeOffset.UtcNow, Issues = ["deployment.execution_interrupted"]
+                }, CancellationToken.None);
+            throw;
+        }
+        if (attempt is not null && execution.Run is { } recordedRun)
+            await deployments!.SaveAttemptAsync(InstitutionDeploymentRecorder.Complete(attempt, recordedRun), CancellationToken.None);
         var succeeded = execution.Run?.Succeeded ?? false;
         var issues = execution.Run is { } run
             ? run.Outcomes.Where(o => !o.IsSuccessful).Select(o => $"{o.StepId}: {o.Status} ({o.Code})").ToArray()
             : execution.Issues.Select(issue => $"{issue.Code}: {issue.Target} - {issue.Message}").ToArray();
         return new DeploymentOutcome(succeeded, issues);
     }
+
+    internal static async Task<IAsyncDisposable?> AcquireDeploymentAsync(IInstitutionDeploymentStore? store,
+        LoadedInstitution? loaded, CancellationToken ct) => store is IInstitutionDeploymentLock locking && loaded is not null
+        ? await locking.AcquireAsync(InstitutionDeploymentAttempt.Identity(loaded.Source.Definition.Provenance.Repository,
+            loaded.Requirements.Id, loaded.Bindings.Environment), ct) : null;
+
+    private static InstitutionDeploymentAttempt AddConnections(InstitutionDeploymentAttempt attempt,
+        IReadOnlyDictionary<string, RootCredentialPayload> credentials) => attempt with
+    {
+        Resources = attempt.Resources.ToImmutableDictionary(pair => pair.Key, pair =>
+        {
+            var resource = pair.Value;
+            var system = resource.Provider switch { "mongodb" => "mongo", "workbench" => "redis", _ => resource.Provider };
+            if (!credentials.TryGetValue(system, out var root)) return resource;
+            if (Uri.CheckHostName(root.Host.Trim('[', ']')) == UriHostNameType.Unknown)
+                throw new InvalidOperationException("A provisioning endpoint must be a host without embedded credentials.");
+            var settings = new Dictionary<string, string> { ["Host"] = root.Host, ["Port"] = root.Port.ToString(System.Globalization.CultureInfo.InvariantCulture) };
+            if (system == "mongo")
+            {
+                settings["Username"] = attempt.InstitutionId + "-" + resource.Id;
+                settings["AuthenticationDatabase"] = "admin"; // The provider creates every scoped user in admin.
+            }
+            if (system == "redis")
+            {
+                settings["Ssl"] = (root.Scheme == "rediss").ToString();
+                settings["Database"] = root.Database ?? "0";
+            }
+            if (system == "keycloak")
+                settings["Authority"] = new UriBuilder(root.Scheme ?? "https", root.Host, root.Port, root.BasePath ?? "/").Uri.AbsoluteUri.TrimEnd('/');
+            return resource with { Connection = settings.ToImmutableDictionary() };
+        })
+    };
 
     internal static IReadOnlyList<IResourceProvider> BuildProviders(IReadOnlyDictionary<string, RootCredentialPayload> credentials, string workbenchTarget)
     {
@@ -201,7 +308,10 @@ public sealed class InstitutionDeploymentRequestConsumer(
             // takes a host-injected IDatabase and never owns/disposes the connection behind it
             // (that's correct for AddForgeCampus's single long-lived connection), so this Worker
             // owns and disposes the multiplexer itself via the IDisposable wrapper below.
-            var options = new ConfigurationOptions { User = redis.Username, Password = redis.Password, AbortOnConnectFail = true };
+            if (redis.Scheme is not (null or "redis" or "rediss") || !int.TryParse(redis.Database ?? "0", out var redisDatabase) || redisDatabase < 0)
+                throw new ArgumentException("Invalid Redis transport or database.");
+            var options = new ConfigurationOptions { User = redis.Username, Password = redis.Password,
+                Ssl = redis.Scheme == "rediss", DefaultDatabase = redisDatabase, AbortOnConnectFail = true };
             options.EndPoints.Add(redis.Host, redis.Port);
             var connection = ConnectionMultiplexer.Connect(options);
             var backend = new RedisWorkbenchBackend(connection.GetDatabase());

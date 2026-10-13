@@ -1,0 +1,23 @@
+name: Provisioning tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  provisioning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Start isolated Redis for consumer grant tests
+        run: >-
+          docker run --detach --name consumer-redis --publish 127.0.0.1:26379:6379 redis:7-alpine
+          sh -c 'printf "%s\n" "user default on >consumer-integration-secret ~* &* +@all" > /data/users.acl; exec redis-server --aclfile /data/users.acl'
+      - name: Test provisioning and consumer isolation
+        env:
+          PROVISIONING_CONSUMER_TEST_REDIS: redis://default:consumer-integration-secret@127.0.0.1:26379
+        run: dotnet test src/Tests/Aetheric.Provisioning.Tests --configuration Release --nologo
+      - name: Stop isolated Redis
+        if: always()
+        run: docker rm --force consumer-redis

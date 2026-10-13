@@ -24,6 +24,15 @@ var secretKey = await ResolveSecretKeyAsync(secretsDirectory, secretsKeyDirector
 
 var runStateStore = new FileRunStateStore(Path.Combine(dataDirectory, "run-state"));
 var secretStore = new EncryptedFileSecretStore(secretsDirectory, secretKey);
+var deploymentStore = new FileInstitutionDeploymentStore(Path.Combine(dataDirectory, "institutions"));
+var consumerOrigin = builder.Configuration["Provisioning:ParallelYou:PublicOrigin"];
+IConsumerConfigurationStore consumerConfigurationStore = new FileConsumerConfigurationStore(Path.Combine(dataDirectory, "consumers"));
+var consumerSecretName = builder.Configuration["Provisioning:ConsumerSecret:Name"];
+if (!string.IsNullOrWhiteSpace(consumerSecretName))
+    consumerConfigurationStore = await KubernetesConsumerConfigurationStore.FromServiceAccountAsync(
+        builder.Configuration["Provisioning:ConsumerSecret:Namespace"] ?? throw new InvalidOperationException("A consumer Secret namespace is required."), consumerSecretName);
+var consumerProvisioner = string.IsNullOrWhiteSpace(consumerOrigin) ? null : new ParallelYouConsumerProvisioner(secretStore,
+    consumerConfigurationStore, new Uri(consumerOrigin, UriKind.Absolute));
 // A fixed, Worker-wide identity - WorkbenchProvider requires the binding's own "target" setting
 // to match whatever the constructing host supplies, matching AddForgeCampus's own single-host
 // convention. Anything deploying an owned Workbench resource through this Worker (e.g. Campus,
@@ -32,14 +41,18 @@ var workbenchTarget = builder.Configuration["Provisioning:WorkbenchTarget"] ?? "
 
 builder.Services.AddPostSubscription(
     ProvisioningPost.RequestReference(),
-    new InstitutionDeploymentRequestConsumer(postProvider, definitionSource, reader, runStateStore, secretStore, workbenchTarget));
+    new InstitutionDeploymentRequestConsumer(postProvider, definitionSource, reader, runStateStore, secretStore, workbenchTarget, deploymentStore, consumerProvisioner));
 
 builder.Services.AddPostSubscription(
     ProvisioningBootstrapPost.RequestReference(),
-    new InstitutionBootstrapRequestConsumer(postProvider, reader, runStateStore, secretStore, workbenchTarget));
+    new InstitutionBootstrapRequestConsumer(postProvider, reader, runStateStore, secretStore, workbenchTarget, deploymentStore));
+
+builder.Services.AddPostSubscription(InstitutionCatalogPost.RequestReference(),
+    new InstitutionCatalogRequestConsumer(postProvider, deploymentStore));
 
 var host = builder.Build();
-await host.RunAsync();
+try { await host.RunAsync(); }
+finally { (consumerConfigurationStore as IDisposable)?.Dispose(); }
 
 static string BuildRabbitMqUrl(IConfiguration configuration)
 {

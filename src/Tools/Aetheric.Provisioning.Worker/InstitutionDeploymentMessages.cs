@@ -52,7 +52,10 @@ public sealed record RootCredentialPayload(
 /// are unavailable; deployment never adopts legacy data. Redis credentials use key "redis",
 /// Scheme redis/rediss (default redis), and Database as a nonnegative index (default 0).
 /// </summary>
-public sealed record ParentIdentity(string Repository, string Revision, IReadOnlyDictionary<string, string> ResourceLocations);
+public sealed record ParentIdentity(string Repository, string Revision, IReadOnlyDictionary<string, string> ResourceLocations)
+{
+    public string? DeploymentId { get; init; }
+}
 
 public sealed record InstitutionDeploymentCompleted(
     Guid RequestId,
