@@ -31,8 +31,10 @@ var consumerSecretName = builder.Configuration["Provisioning:ConsumerSecret:Name
 if (!string.IsNullOrWhiteSpace(consumerSecretName))
     consumerConfigurationStore = await KubernetesConsumerConfigurationStore.FromServiceAccountAsync(
         builder.Configuration["Provisioning:ConsumerSecret:Namespace"] ?? throw new InvalidOperationException("A consumer Secret namespace is required."), consumerSecretName);
+var consumerRegistryAuthority = builder.Configuration["Provisioning:ParallelYou:RegistryAuthority"];
 var consumerProvisioner = string.IsNullOrWhiteSpace(consumerOrigin) ? null : new ParallelYouConsumerProvisioner(secretStore,
-    consumerConfigurationStore, new Uri(consumerOrigin, UriKind.Absolute));
+    consumerConfigurationStore, new Uri(consumerOrigin, UriKind.Absolute),
+    registryAuthority: string.IsNullOrWhiteSpace(consumerRegistryAuthority) ? null : new Uri(consumerRegistryAuthority, UriKind.Absolute));
 // A fixed, Worker-wide identity - WorkbenchProvider requires the binding's own "target" setting
 // to match whatever the constructing host supplies, matching AddForgeCampus's own single-host
 // convention. Anything deploying an owned Workbench resource through this Worker (e.g. Campus,

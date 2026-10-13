@@ -38,7 +38,7 @@ public sealed class ParallelYouConsumerTests
             source, source, new string('e', 64), InstitutionDeploymentStatus.Succeeded, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
             new Dictionary<string, ProvisionedResource> { ["library"] = library }.ToImmutableDictionary(), [], []);
         var provisioner = new ParallelYouConsumerProvisioner(secrets, new FileConsumerConfigurationStore(Path.Combine(directory, "consumers")),
-            new Uri("https://forge.example/"), root => new KeycloakResourceProvider(root, new BrowserClientHandler()));
+            new Uri("https://forge.example/"), root => new KeycloakResourceProvider(root, new BrowserClientHandler()), registryAuthority: new Uri("https://public-identity.example/"));
         var key = "consumer-test-" + Guid.NewGuid().ToString("N");
         string? scopedUser = null;
         try
@@ -52,6 +52,8 @@ public sealed class ParallelYouConsumerTests
             Assert.DoesNotContain("keycloak-root-secret", bytes);
             var manifest = JsonSerializer.Deserialize<ConsumerConfiguration>(bytes)!;
             Assert.Equal("parallel-you-library", manifest.Settings["ParallelYou:MongoDb:Username"]);
+            Assert.Equal("https://public-identity.example", manifest.Settings["Registry:Keycloak:Authority"]);
+            Assert.Equal("members", manifest.Settings["Registry:Keycloak:Realm"]);
             Assert.Equal("admin", manifest.Settings["ParallelYou:MongoDb:AuthenticationDatabase"]);
             Assert.Equal("My Parallel You", manifest.InstitutionName);
             scopedUser = manifest.Settings["Workbench:Redis:User"];
