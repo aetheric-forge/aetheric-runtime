@@ -8,7 +8,7 @@ namespace Aetheric.Provisioning.Worker;
 
 /// <summary>Materializes a Parallel You consumer after its institution plan succeeds.</summary>
 public sealed class ParallelYouConsumerProvisioner(ISecretStore secrets, IConsumerConfigurationStore configurations,
-    Uri publicOrigin, Func<RootCredential, KeycloakResourceProvider>? registryFactory = null)
+    Uri publicOrigin, Func<RootCredential, KeycloakResourceProvider>? registryFactory = null, Uri? registryAuthority = null)
 {
     internal static readonly string[] Stages = ["ReflectionMapping", "TrackingCurrent", "IntentionCurrent", "PlanCurrent", "RecommendationCurrent"];
 
@@ -19,6 +19,10 @@ public sealed class ParallelYouConsumerProvisioner(ISecretStore secrets, IConsum
             || publicOrigin.Fragment.Length != 0 || publicOrigin.AbsolutePath != "/"
             || (publicOrigin.Scheme != "https" && !(publicOrigin.Scheme == "http" && publicOrigin.IsLoopback)))
             throw new ArgumentException("An exact HTTPS public origin or loopback development origin is required.");
+        if (registryAuthority is not null && (!registryAuthority.IsAbsoluteUri || registryAuthority.UserInfo.Length != 0
+            || registryAuthority.Query.Length != 0 || registryAuthority.Fragment.Length != 0
+            || (registryAuthority.Scheme != "https" && !(registryAuthority.Scheme == "http" && registryAuthority.IsLoopback))))
+            throw new ArgumentException("A public HTTPS registry authority or loopback development authority is required.");
         if (deployment.Status != InstitutionDeploymentStatus.Succeeded || deployment.InstitutionId != "parallel-you"
             || !deployment.Resources.TryGetValue("library", out var library) || library.Provider != "mongodb"
             || library.Secrets.Length != 1 || !library.Settings.TryGetValue("database", out var database)
@@ -57,7 +61,7 @@ public sealed class ParallelYouConsumerProvisioner(ISecretStore secrets, IConsum
         using (var registry = registryFactory?.Invoke(registryRoot) ?? new KeycloakResourceProvider(registryRoot))
             await registry.EnsureBrowserClientAsync(realm, browserClient, deployment.DeploymentId, clientSecret, publicOrigin, ct);
 
-        var authority = new UriBuilder(keycloak.Scheme ?? "https", keycloak.Host, keycloak.Port, keycloak.BasePath ?? "/").Uri.AbsoluteUri.TrimEnd('/');
+        var authority = registryAuthority?.AbsoluteUri.TrimEnd('/') ?? new UriBuilder(keycloak.Scheme ?? "https", keycloak.Host, keycloak.Port, keycloak.BasePath ?? "/").Uri.AbsoluteUri.TrimEnd('/');
         var settings = new Dictionary<string, string>
         {
             ["ParallelYou:Enabled"] = "true",
