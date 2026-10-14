@@ -48,7 +48,7 @@ public sealed class KeycloakResourceProvider : IResourceProvider, IDisposable
 
     /// <summary>Creates a browser-only consumer client without granting realm-management roles.</summary>
     public async Task EnsureBrowserClientAsync(string realm, string clientId, string owner,
-        string secret, Uri publicOrigin, CancellationToken ct = default)
+        string secret, Uri publicOrigin, CancellationToken ct = default, bool directoryReader = false)
     {
         if (!RealmPattern.IsMatch(realm) || !Regex.IsMatch(clientId, "\\A[a-zA-Z0-9_.-]{1,200}\\z")
             || !Regex.IsMatch(owner, "\\A[0-9a-f]{64}\\z") || string.IsNullOrWhiteSpace(secret)
@@ -72,7 +72,7 @@ public sealed class KeycloakResourceProvider : IResourceProvider, IDisposable
         var representation = new
         {
             id = existing, clientId, protocol = "openid-connect", enabled = true, publicClient = false,
-            serviceAccountsEnabled = false, standardFlowEnabled = true,
+            serviceAccountsEnabled = directoryReader, standardFlowEnabled = !directoryReader,
             directAccessGrantsEnabled = false, clientAuthenticatorType = "client-secret", secret,
             redirectUris = new[] { origin + "/signin-oidc" }, webOrigins = new[] { origin },
             attributes = new Dictionary<string, string>
@@ -86,6 +86,12 @@ public sealed class KeycloakResourceProvider : IResourceProvider, IDisposable
         using var result = await SendAsync(existing is null ? HttpMethod.Post : HttpMethod.Put,
             existing is null ? path : path + "/" + Uri.EscapeDataString(existing), representation, ct);
         result.EnsureSuccessStatusCode();
+        if (directoryReader)
+        {
+            var internalId = await FindClientInternalIdAsync(realm, clientId, ct)
+                ?? throw new InvalidOperationException("Directory client was not created.");
+            await EnsureServiceAccountRolesAsync(realm, internalId, ct, ["view-users", "query-users", "query-groups"]);
+        }
     }
 
     public ImmutableArray<ValidationIssue> Validate(ResourceRequirement resource, ResourceBinding binding)
@@ -170,8 +176,9 @@ public sealed class KeycloakResourceProvider : IResourceProvider, IDisposable
         update.EnsureSuccessStatusCode();
     }
 
-    private async Task EnsureServiceAccountRolesAsync(string realm, string internalId, CancellationToken ct)
+    private async Task EnsureServiceAccountRolesAsync(string realm, string internalId, CancellationToken ct, string[]? requestedRoles = null)
     {
+        var roles = requestedRoles ?? RealmManagementRoles;
         using var accountResponse = await SendAsync(HttpMethod.Get,
             $"admin/realms/{Uri.EscapeDataString(realm)}/clients/{Uri.EscapeDataString(internalId)}/service-account-user", null, ct);
         accountResponse.EnsureSuccessStatusCode();
@@ -189,13 +196,15 @@ public sealed class KeycloakResourceProvider : IResourceProvider, IDisposable
         assignedResponse.EnsureSuccessStatusCode();
         var assigned = (await assignedResponse.Content.ReadFromJsonAsync<List<RoleRepresentation>>(JsonOptions, ct))
             ?.Select(r => r.Name).ToHashSet(StringComparer.Ordinal) ?? [];
-        if (RealmManagementRoles.All(assigned.Contains)) return;
+        if (roles.All(assigned.Contains)) return;
 
         using var availableResponse = await SendAsync(HttpMethod.Get,
             $"admin/realms/{Uri.EscapeDataString(realm)}/users/{Uri.EscapeDataString(userId)}/role-mappings/clients/{Uri.EscapeDataString(realmMgmtId)}/available", null, ct);
         availableResponse.EnsureSuccessStatusCode();
         var available = await availableResponse.Content.ReadFromJsonAsync<List<RoleRepresentation>>(JsonOptions, ct) ?? [];
-        var toAssign = available.Where(r => r.Name is not null && RealmManagementRoles.Contains(r.Name) && !assigned.Contains(r.Name)).ToList();
+        var toAssign = available.Where(r => r.Name is not null && roles.Contains(r.Name) && !assigned.Contains(r.Name)).ToList();
+        if (!roles.All(role => assigned.Contains(role) || toAssign.Any(candidate => candidate.Name == role)))
+            throw new InvalidOperationException("Required directory roles are unavailable.");
         if (toAssign.Count == 0) return;
 
         using var assign = await SendAsync(HttpMethod.Post,

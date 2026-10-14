@@ -71,7 +71,8 @@ public sealed class InstitutionDeploymentRequestConsumer(
     ISecretStore secretStore,
     string workbenchTarget,
     IInstitutionDeploymentStore? deploymentStore = null,
-    ParallelYouConsumerProvisioner? parallelYouConsumer = null)
+    ParallelYouConsumerProvisioner? parallelYouConsumer = null,
+    WebModuleConsumerProvisioner? webModuleConsumer = null)
     : MessageConsumerBase<InstitutionDeploymentRequested>
 {
     public override IPostContract Contract => ProvisioningPost.RequestReference().Contract;
@@ -104,15 +105,24 @@ public sealed class InstitutionDeploymentRequestConsumer(
             var outcome = await DeployOneAsync(review, parent, ct, deploymentStore,
                 message.RequestId, message.RequestedAtUtc, message.RootCredentials);
 
-            if (outcome.Succeeded && review.Loaded?.Requirements.Id == "parallel-you" && deploymentStore is not null)
+            if (outcome.Succeeded && (review.Loaded?.Requirements.Id == "parallel-you" || WebModuleConsumerProvisioner.Supports(review.Loaded?.Requirements.Id ?? "")) && deploymentStore is not null)
             {
                 var deploymentId = InstitutionDeploymentAttempt.Identity(review.Loaded.Source.Definition.Provenance.Repository,
                     review.Loaded.Requirements.Id, review.Bindings!.Environment);
                 var record = (await deploymentStore.ReadAsync(deploymentId, ct))!.Provisioned!;
                 try
                 {
-                    if (parallelYouConsumer is null) throw new ConsumerProvisioningException("consumer.public_origin_required");
-                    var delivery = await parallelYouConsumer.ProvisionAsync(record, message.RootCredentials, ct);
+                    ConsumerDelivery delivery;
+                    if (record.InstitutionId == "parallel-you")
+                    {
+                        if (parallelYouConsumer is null) throw new ConsumerProvisioningException("consumer.public_origin_required");
+                        delivery = await parallelYouConsumer.ProvisionAsync(record, message.RootCredentials, ct);
+                    }
+                    else
+                    {
+                        if (webModuleConsumer is null) throw new ConsumerProvisioningException("consumer.module_delivery_unconfigured");
+                        delivery = await webModuleConsumer.ProvisionAsync(record, message.RootCredentials, ct, message.DecisionsConsumer);
+                    }
                     await deploymentStore.SaveAttemptAsync(record with { Consumer = delivery }, ct);
                 }
                 catch (Exception exception) when (!ct.IsCancellationRequested)
@@ -120,7 +130,7 @@ public sealed class InstitutionDeploymentRequestConsumer(
                     var code = exception is ConsumerProvisioningException consumerError ? consumerError.Code : "consumer.delivery_failed";
                     await deploymentStore.SaveAttemptAsync(record with
                     {
-                        Consumer = new ConsumerDelivery(ConsumerDeliveryStatus.Failed, "parallel-you", record.PlanId,
+                        Consumer = new ConsumerDelivery(ConsumerDeliveryStatus.Failed, record.InstitutionId, record.PlanId,
                             ImmutableDictionary<string, SecretReference>.Empty, [code])
                     }, CancellationToken.None);
                     outcome = new DeploymentOutcome(false, [code]);
@@ -255,10 +265,10 @@ public sealed class InstitutionDeploymentRequestConsumer(
             if (Uri.CheckHostName(root.Host.Trim('[', ']')) == UriHostNameType.Unknown)
                 throw new InvalidOperationException("A provisioning endpoint must be a host without embedded credentials.");
             var settings = new Dictionary<string, string> { ["Host"] = root.Host, ["Port"] = root.Port.ToString(System.Globalization.CultureInfo.InvariantCulture) };
-            if (system == "mongo")
+            if (system is "mongo" or "rabbitmq")
             {
                 settings["Username"] = attempt.InstitutionId + "-" + resource.Id;
-                settings["AuthenticationDatabase"] = "admin"; // The provider creates every scoped user in admin.
+                if (system == "mongo") settings["AuthenticationDatabase"] = "admin"; // The provider creates every scoped user in admin.
             }
             if (system == "redis")
             {

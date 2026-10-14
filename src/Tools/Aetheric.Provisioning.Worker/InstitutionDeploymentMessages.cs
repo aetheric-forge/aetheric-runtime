@@ -23,7 +23,10 @@ public sealed record InstitutionDeploymentRequested(
     string BindingsPath,
     IReadOnlyDictionary<string, RootCredentialPayload> RootCredentials,
     ParentIdentity? Parent,
-    DateTimeOffset RequestedAtUtc);
+    DateTimeOffset RequestedAtUtc)
+{
+    public DecisionsConsumerOptions? DecisionsConsumer { get; init; }
+}
 
 public sealed record RootCredentialPayload(
     string Host,

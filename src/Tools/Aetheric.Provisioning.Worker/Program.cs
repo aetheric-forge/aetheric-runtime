@@ -35,6 +35,26 @@ var consumerRegistryAuthority = builder.Configuration["Provisioning:ParallelYou:
 var consumerProvisioner = string.IsNullOrWhiteSpace(consumerOrigin) ? null : new ParallelYouConsumerProvisioner(secretStore,
     consumerConfigurationStore, new Uri(consumerOrigin, UriKind.Absolute),
     registryAuthority: string.IsNullOrWhiteSpace(consumerRegistryAuthority) ? null : new Uri(consumerRegistryAuthority, UriKind.Absolute));
+var moduleStores = new Dictionary<string, IConsumerConfigurationStore>();
+foreach (var module in new[] { "library", "archive", "decisions" })
+{
+    var section = WebModuleConsumerProfiles.Section(module);
+    var secretName = builder.Configuration[$"Provisioning:Consumers:{section}:SecretName"];
+    moduleStores[module] = string.IsNullOrWhiteSpace(secretName)
+        ? new FileConsumerConfigurationStore(Path.Combine(dataDirectory, "consumers"))
+        : await KubernetesConsumerConfigurationStore.FromServiceAccountAsync(
+            builder.Configuration["Provisioning:ConsumerSecret:Namespace"] ?? throw new InvalidOperationException("A consumer Secret namespace is required."), secretName);
+}
+using var moduleConfigurationStore = new ModuleConsumerConfigurationStore(moduleStores,
+    builder.Configuration["Provisioning:Consumers:Environment"] ?? "production");
+var organization = builder.Configuration.GetSection("Provisioning:Consumers:Decisions:Organization");
+var decisionsOptions = organization.Exists() ? new DecisionsConsumerOptions(
+    organization["Id"] ?? "", organization["DisplayName"] ?? "", organization["MemberGroupId"] ?? "", organization["MaintainerGroupId"] ?? "") : null;
+using var archiveHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+var moduleConsumer = new WebModuleConsumerProvisioner(secretStore, moduleConfigurationStore, deploymentStore,
+    new SeaweedFsConsumerCredentials(archiveHttp), decisionsOptions,
+    string.IsNullOrWhiteSpace(consumerOrigin) ? null : new Uri(consumerOrigin, UriKind.Absolute),
+    string.IsNullOrWhiteSpace(consumerRegistryAuthority) ? null : new Uri(consumerRegistryAuthority, UriKind.Absolute));
 // A fixed, Worker-wide identity - WorkbenchProvider requires the binding's own "target" setting
 // to match whatever the constructing host supplies, matching AddForgeCampus's own single-host
 // convention. Anything deploying an owned Workbench resource through this Worker (e.g. Campus,
@@ -43,7 +63,7 @@ var workbenchTarget = builder.Configuration["Provisioning:WorkbenchTarget"] ?? "
 
 builder.Services.AddPostSubscription(
     ProvisioningPost.RequestReference(),
-    new InstitutionDeploymentRequestConsumer(postProvider, definitionSource, reader, runStateStore, secretStore, workbenchTarget, deploymentStore, consumerProvisioner));
+    new InstitutionDeploymentRequestConsumer(postProvider, definitionSource, reader, runStateStore, secretStore, workbenchTarget, deploymentStore, consumerProvisioner, moduleConsumer));
 
 builder.Services.AddPostSubscription(
     ProvisioningBootstrapPost.RequestReference(),
