@@ -13,6 +13,19 @@ public sealed class KeycloakAdministratorCreatorTests
     private static KeycloakOptions Options => new() { Authority = "https://identity.example", Realm = "root", ClientId = "provisioner", ClientSecret = "client-secret" };
     private static NewRegistryAdministrator Account => new() { Username = "new-admin", Email = "admin@example.com", FirstName = "New", LastName = "Admin", Password = "account-password" };
     [Fact]
+    public async Task Private_admin_endpoint_is_used_for_creation_and_location_validation()
+    {
+        var options = Options;
+        options.AdminApiBaseAddress = "https://admin.internal.example/admin/";
+        var handler = new Handler { AdminHost = "admin.internal.example", Location = "https://admin.internal.example/admin/realms/root/users/new-subject" };
+        using var creator = new KeycloakAdministratorCreator(options, "forge-admin", handler);
+        await creator.PrepareAsync(default);
+        Assert.Equal("new-subject", await creator.CreateAsync(Account, default));
+        Assert.Contains("identity.example", handler.Hosts);
+        Assert.Contains("admin.internal.example", handler.Hosts);
+    }
+
+    [Fact]
     public async Task Creates_dedicated_role_and_enabled_user_with_password_in_single_post()
     {
         var handler = new Handler { MissingRole = true };
@@ -68,6 +81,8 @@ public sealed class KeycloakAdministratorCreatorTests
     }
     private sealed class Handler : HttpMessageHandler
     {
+        public List<string> Hosts { get; } = [];
+        public string AdminHost { get; init; } = "identity.example";
         public bool MissingRole, Composite;
         public HttpStatusCode UserStatus = HttpStatusCode.Created;
         public string? Location = "https://identity.example/admin/realms/root/users/new-subject";
@@ -75,6 +90,9 @@ public sealed class KeycloakAdministratorCreatorTests
         public int UserPosts;
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
+            Hosts.Add(request.RequestUri!.Host);
+            Assert.Equal(request.RequestUri.AbsolutePath.EndsWith("/token") ? "identity.example" : AdminHost,
+                request.RequestUri.Host);
             var path = request.RequestUri!.AbsolutePath;
             if (path.EndsWith("/token")) return Json(HttpStatusCode.OK, "{\"access_token\":\"issued-token\",\"token_type\":\"Bearer\"}");
             Assert.Equal("issued-token", request.Headers.Authorization?.Parameter);

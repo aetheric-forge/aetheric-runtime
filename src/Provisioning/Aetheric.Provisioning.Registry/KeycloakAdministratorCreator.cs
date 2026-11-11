@@ -24,7 +24,7 @@ public sealed class KeycloakAdministratorCreator : IRegistryBootstrapAccountCrea
             || role is "admin" or "realm-admin" or "offline_access" or "uma_authorization")
             throw new ArgumentException("A dedicated Forge administrator role is required.");
         _options = options; _role = role;
-        _realm = new Uri(options.Authority.TrimEnd('/') + "/admin/realms/" + Uri.EscapeDataString(options.Realm) + "/");
+        _realm = BootstrapKeycloakEndpoints.AdminRealm(options);
         _http = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(30) };
     }
 
