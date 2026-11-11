@@ -27,13 +27,12 @@ public sealed class KeycloakProvisionerConnection : IDisposable
             || string.IsNullOrWhiteSpace(options.Realm) || options.Realm != options.Realm.Trim()
             || options.Realm is "." or ".." || options.Realm.IndexOfAny(['/', '\\', '?', '#']) >= 0
             || string.IsNullOrWhiteSpace(options.ClientId) || options.ClientId != options.ClientId.Trim()
-            || string.IsNullOrWhiteSpace(options.ClientSecret)
-            || !string.IsNullOrWhiteSpace(options.AdminApiBaseAddress))
+            || string.IsNullOrWhiteSpace(options.ClientSecret))
             throw new ArgumentException("Invalid Keycloak connection configuration.");
         var server = new Uri(authority.AbsoluteUri.TrimEnd('/') + "/");
         _issuer = new Uri(server, "realms/" + Uri.EscapeDataString(options.Realm));
-        _clients = new Uri(server, "admin/realms/" + Uri.EscapeDataString(options.Realm)
-            + "/clients?clientId=" + Uri.EscapeDataString(options.ClientId) + "&exact=true");
+        _clients = new Uri(BootstrapKeycloakEndpoints.AdminRealm(options),
+            "clients?clientId=" + Uri.EscapeDataString(options.ClientId) + "&exact=true");
         _clientId = options.ClientId;
         _clientSecret = options.ClientSecret;
         _http = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false })
