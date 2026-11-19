@@ -15,6 +15,41 @@ public sealed class KeycloakProvisionerConnectionTests
     };
 
     [Fact]
+    public void Existing_authority_path_prefix_is_preserved_without_an_override()
+    {
+        var options = Options;
+        options.Authority = "https://identity.example/auth";
+        Assert.Equal("https://identity.example/auth/admin/realms/root/",
+            BootstrapKeycloakEndpoints.AdminRealm(options).AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task Private_admin_endpoint_preserves_public_token_issuer()
+    {
+        var options = Options;
+        options.AdminApiBaseAddress = "https://admin.internal.example/admin/";
+        var handler = new Handler { AdminHost = "admin.internal.example" };
+        using var connection = new KeycloakProvisionerConnection(options, handler);
+        await connection.CheckAsync();
+        Assert.Equal(new[] { "identity.example", "admin.internal.example" }, handler.Hosts);
+    }
+
+    [Theory]
+    [InlineData("http://admin.internal.example/admin/")]
+    [InlineData("https://user:password@admin.internal.example/admin/")]
+    [InlineData("https://admin.internal.example/admin/?other=1")]
+    [InlineData("https://admin.internal.example/admin/#fragment")]
+    [InlineData("https://admin.internal.example/another-path/")]
+    public void Unsafe_admin_endpoints_are_rejected_before_credentials_are_sent(string address)
+    {
+        var options = Options;
+        options.AdminApiBaseAddress = address;
+        var handler = new Handler();
+        Assert.Throws<ArgumentException>(() => new KeycloakProvisionerConnection(options, handler));
+        Assert.Empty(handler.Paths);
+    }
+
+    [Fact]
     public async Task Realm_admin_token_connects_without_any_human_role_lookup_or_admin_write()
     {
         var handler = new Handler();
@@ -154,6 +189,8 @@ public sealed class KeycloakProvisionerConnectionTests
 
     private sealed class Handler : HttpMessageHandler
     {
+        public List<string> Hosts { get; } = [];
+        public string AdminHost { get; init; } = "identity.example";
         public List<string> Paths { get; } = [];
         public string RoleClaims { get; init; } = """{"resource_access":{"realm-management":{"roles":["realm-admin"]}}}""";
         public HttpStatusCode TokenStatus { get; init; } = HttpStatusCode.OK;
@@ -167,6 +204,9 @@ public sealed class KeycloakProvisionerConnectionTests
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
+            Hosts.Add(request.RequestUri!.Host);
+            Assert.Equal(request.RequestUri.AbsolutePath.EndsWith("/token") ? "identity.example" : AdminHost,
+                request.RequestUri.Host);
             var path = request.RequestUri!.AbsolutePath;
             Paths.Add(path);
             if (path == "/realms/root/protocol/openid-connect/token")

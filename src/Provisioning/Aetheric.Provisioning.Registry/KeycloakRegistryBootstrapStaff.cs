@@ -36,13 +36,13 @@ public sealed class KeycloakRegistryBootstrapStaff : IRegistryBootstrapStaff, ID
             || string.IsNullOrWhiteSpace(options.ClientSecret)
             || string.IsNullOrWhiteSpace(settings.ClientId) || settings.ClientId != settings.ClientId.Trim()
             || options.ClientId != settings.ClientId || string.IsNullOrWhiteSpace(settings.AdminRole)
-            || settings.AdminRole != settings.AdminRole.Trim()
-            || !string.IsNullOrWhiteSpace(options.AdminApiBaseAddress))
+            || settings.AdminRole != settings.AdminRole.Trim())
             throw new ArgumentException("Invalid Registry bootstrap connection configuration.");
         var issuer = new Uri(new Uri(authority.AbsoluteUri.TrimEnd('/') + "/"),
             "realms/" + Uri.EscapeDataString(options.Realm)).AbsoluteUri;
         if (!string.Equals(issuer, settings.Issuer, StringComparison.Ordinal))
             throw new ArgumentException("Keycloak issuer does not match the bootstrap deployment record.");
+        _ = BootstrapKeycloakEndpoints.AdminRealm(options);
         _adminRole = settings.AdminRole;
         _http = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false })
             { Timeout = TimeSpan.FromSeconds(30) };

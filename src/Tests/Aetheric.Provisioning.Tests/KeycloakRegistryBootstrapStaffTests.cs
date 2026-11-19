@@ -15,6 +15,19 @@ public sealed class KeycloakRegistryBootstrapStaffTests
     private static KeycloakRegistryBootstrapStaff Staff(Handler handler) => new(Settings, Options, handler);
 
     [Fact]
+    public async Task Private_admin_endpoint_preserves_the_deployment_issuer_and_role_scope()
+    {
+        var options = Options;
+        options.AdminApiBaseAddress = "https://admin.internal.example/admin/";
+        var handler = new Handler { AdminHost = "admin.internal.example" };
+        using var staff = new KeycloakRegistryBootstrapStaff(Settings, options, handler);
+        Assert.True(await staff.PrincipalExistsAsync("operator", default));
+        await staff.EnsureAdminAuthorityAsync("operator", Settings.AdminRole, default);
+        Assert.Contains("identity.example", handler.Hosts);
+        Assert.Contains("admin.internal.example", handler.Hosts);
+    }
+
+    [Fact]
     public async Task Uses_runtime_directory_and_clerk_and_only_assigns_the_existing_role()
     {
         var handler = new Handler();
@@ -156,7 +169,7 @@ public sealed class KeycloakRegistryBootstrapStaffTests
         if (change == "issuer") settings = settings with { Issuer = "https://elsewhere.example/realms/root" };
         if (change == "client") options.ClientId = "another-client";
         if (change == "http") options.Authority = "http://identity.example";
-        if (change == "override") options.AdminApiBaseAddress = "https://elsewhere.example/admin";
+        if (change == "override") options.AdminApiBaseAddress = "http://elsewhere.example/admin";
         var handler = new Handler();
         Assert.Throws<ArgumentException>(() => new KeycloakRegistryBootstrapStaff(settings, options, handler));
         Assert.Empty(handler.Requests);
@@ -165,6 +178,8 @@ public sealed class KeycloakRegistryBootstrapStaffTests
     private sealed record Request(HttpMethod Method, string Path, string Body);
     private sealed class Handler : HttpMessageHandler
     {
+        public List<string> Hosts { get; } = [];
+        public string AdminHost { get; init; } = "identity.example";
         public List<Request> Requests { get; } = [];
         public HttpStatusCode TokenStatus { get; init; } = HttpStatusCode.OK;
         public HttpStatusCode ClientStatus { get; init; } = HttpStatusCode.OK;
@@ -179,6 +194,9 @@ public sealed class KeycloakRegistryBootstrapStaffTests
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
+            Hosts.Add(request.RequestUri!.Host);
+            Assert.Equal(request.RequestUri.AbsolutePath.EndsWith("/token") ? "identity.example" : AdminHost,
+                request.RequestUri.Host);
             var path = request.RequestUri!.AbsolutePath;
             Requests.Add(new(request.Method, path, request.Content is null ? "" : await request.Content.ReadAsStringAsync(ct)));
             if (path == "/realms/root/protocol/openid-connect/token")
